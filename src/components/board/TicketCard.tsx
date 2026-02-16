@@ -3,6 +3,8 @@ import { Ticket } from "@/types";
 import { team } from "@/data/mockData";
 import { priorityConfig, typeConfig } from "@/lib/ticketUtils";
 import { cn } from "@/lib/utils";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface Props {
   ticket: Ticket;
@@ -14,12 +16,31 @@ export function TicketCard({ ticket, onClick }: Props) {
   const pc = priorityConfig[ticket.priority];
   const tc = typeConfig[ticket.type];
 
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: ticket.id, data: { ticket } });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
   return (
     <button
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
       onClick={onClick}
       className={cn(
         "w-full text-left rounded-lg bg-surface-raised p-3 border border-border hover:border-primary/50 transition-all hover-lift",
-        pc.className
+        pc.className,
+        isDragging && "opacity-50 shadow-lg ring-2 ring-primary/40"
       )}
     >
       <div className="flex items-start justify-between gap-2 mb-2">
