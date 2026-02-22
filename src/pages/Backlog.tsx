@@ -1,21 +1,42 @@
 import { useState, useMemo } from "react";
-import { ChevronDown, ChevronRight, GripVertical, Plus } from "lucide-react";
+import { ChevronDown, ChevronRight, GripVertical, Plus, Target } from "lucide-react";
 import { useAppState } from "@/context/AppContext";
 import { team } from "@/data/mockData";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TicketDetailSheet } from "@/components/tickets/TicketDetailSheet";
+import { CreateBacklogDialog } from "@/components/backlog/CreateBacklogDialog";
+import { CreateTicketDialog } from "@/components/backlog/CreateTicketDialog";
 import { statusConfig, priorityConfig, typeConfig } from "@/lib/ticketUtils";
 import { Ticket } from "@/types";
 import { cn } from "@/lib/utils";
+import { ticketService } from "@/services/ticketService";
 
 export default function Backlog() {
-  const { tickets, sprints } = useAppState();
+  const { tickets, sprints, currentProject } = useAppState();
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({ s4: true, s5: true, backlog: true });
+  const [showCreateBacklogDialog, setShowCreateBacklogDialog] = useState(false);
+  const [showCreateTicketDialog, setShowCreateTicketDialog] = useState(false);
 
   const toggle = (id: string) => setExpandedSections((p) => ({ ...p, [id]: !p[id] }));
+
+  const handleCreateBacklog = (backlog: { name: string; description: string }) => {
+    // TODO: Implement backlog creation logic
+    console.log('Creating backlog:', backlog);
+    // This would typically call an API to create the backlog
+  };
+
+  const handleTicketCreated = (newTicket: any) => {
+    console.log('Ticket created successfully:', newTicket);
+    // You could update the local state or refresh the tickets list
+    // For now, just log the success
+    // In a real app, you might want to:
+    // 1. Add the new ticket to the local state
+    // 2. Show a success notification
+    // 3. Refresh the tickets list from the server
+  };
 
   const sprintSections = useMemo(() => {
     const activeSprints = sprints.filter((s) => s.status !== "completed");
@@ -28,10 +49,39 @@ export default function Backlog() {
   const backlogTickets = useMemo(() => tickets.filter((t) => !t.sprintId), [tickets]);
 
   return (
-    <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-foreground">Backlog</h1>
-        <p className="text-sm text-muted-foreground mt-1">Manage and prioritize your product backlog</p>
+    <div className="space-y-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Header Section */}
+      <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-primary/5 via-primary/10 to-transparent p-8 border border-primary/10">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-secondary/10 rounded-full blur-2xl" />
+        
+        <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+          <div className="space-y-2">
+            <h1 className="text-4xl font-bold tracking-tight text-foreground">Backlog</h1>
+            <p className="text-lg text-muted-foreground max-w-2xl">
+              Manage and prioritize your product backlog
+            </p>
+          </div>
+          
+          <div className="flex gap-2 self-end sm:self-center">
+            <Button 
+              variant="outline" 
+              size="lg"
+              onClick={() => setShowCreateBacklogDialog(true)}
+              className="border-2 hover:border-primary/50 transition-colors"
+            >
+              <Target className="h-4 w-4 mr-2" />
+              Create Backlog
+            </Button>
+            <Button 
+              size="lg"
+              onClick={() => setShowCreateTicketDialog(true)}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Ticket
+            </Button>
+          </div>
+        </div>
       </div>
 
       <div className="space-y-2">
@@ -63,6 +113,19 @@ export default function Backlog() {
       </div>
 
       <TicketDetailSheet ticket={selectedTicket} open={!!selectedTicket} onOpenChange={(o) => !o && setSelectedTicket(null)} />
+      
+      <CreateBacklogDialog 
+        open={showCreateBacklogDialog}
+        onOpenChange={setShowCreateBacklogDialog}
+        onCreateBacklog={handleCreateBacklog}
+      />
+      
+      <CreateTicketDialog 
+        open={showCreateTicketDialog}
+        onOpenChange={setShowCreateTicketDialog}
+        projectId={Number(currentProject?.id) || 1}
+        onTicketCreated={handleTicketCreated}
+      />
     </div>
   );
 }
@@ -72,7 +135,7 @@ function Section({ id, title, subtitle, count, expanded, onToggle, badge, badgeV
   badge?: string; badgeVariant?: "default" | "secondary"; tickets: Ticket[]; onTicketClick: (t: Ticket) => void;
 }) {
   return (
-    <div className="rounded-lg border border-border bg-surface overflow-hidden">
+    <div className="rounded-xl border bg-card overflow-hidden">
       <button onClick={onToggle} className="flex w-full items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors">
         {expanded ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
         <span className="text-sm font-semibold text-foreground">{title}</span>
@@ -83,7 +146,7 @@ function Section({ id, title, subtitle, count, expanded, onToggle, badge, badgeV
         </span>
       </button>
       {expanded && (
-        <div className="border-t border-border">
+        <div className="border-t">
           {tickets.map((t) => <TicketRow key={t.id} ticket={t} onClick={() => onTicketClick(t)} />)}
           {tickets.length === 0 && <p className="text-sm text-muted-foreground p-4 text-center">No issues</p>}
         </div>
@@ -99,7 +162,7 @@ function TicketRow({ ticket, onClick }: { ticket: Ticket; onClick: () => void })
   const tc = typeConfig[ticket.type];
 
   return (
-    <button onClick={onClick} className="flex w-full items-center gap-3 px-4 py-2.5 text-sm hover:bg-accent/30 transition-colors border-b border-border/50 last:border-b-0">
+    <button onClick={onClick} className="flex w-full items-center gap-3 px-4 py-2.5 text-sm hover:bg-accent/30 transition-colors border-b last:border-b-0">
       <GripVertical className="h-3.5 w-3.5 text-muted-foreground/40 cursor-grab" />
       <span className="text-xs">{tc.emoji}</span>
       <span className="text-xs font-mono text-muted-foreground w-16">{ticket.projectKey}-{ticket.number}</span>

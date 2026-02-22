@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Plus } from "lucide-react";
+import { Plus, RefreshCw, AlertCircle } from "lucide-react";
 import { useAppState } from "@/context/AppContext";
 import { TicketCard } from "@/components/board/TicketCard";
 import { TicketDetailSheet } from "@/components/tickets/TicketDetailSheet";
@@ -41,7 +41,7 @@ function DroppableColumn({
 }
 
 export default function Board() {
-  const { tickets, updateTicket } = useAppState();
+  const { tickets, updateTicket, loading, error, refreshTickets, currentProject } = useAppState();
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [activeTicket, setActiveTicket] = useState<Ticket | null>(null);
 
@@ -50,7 +50,7 @@ export default function Board() {
   );
 
   const activeSprintTickets = useMemo(
-    () => tickets.filter((t) => t.sprintId === "s4"),
+    () => tickets.filter((t) => t.sprintId === "s4" || !t.sprintId), // Show both sprint and backlog tickets
     [tickets]
   );
 
@@ -93,11 +93,50 @@ export default function Board() {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="p-6 h-full flex items-center justify-center">
+        <div className="text-center">
+          <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-muted-foreground" />
+          <p className="text-muted-foreground">Loading tickets...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6 h-full flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <AlertCircle className="h-8 w-8 mx-auto mb-4 text-destructive" />
+          <p className="text-destructive mb-4">{error}</p>
+          <button
+            onClick={refreshTickets}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 h-full">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-foreground">Board</h1>
-        <p className="text-sm text-muted-foreground mt-1">Sprint 4 — Alpha Launch</p>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Board</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            {currentProject.name} — {tickets.length} tickets
+          </p>
+        </div>
+        <button
+          onClick={refreshTickets}
+          className="p-2 text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors"
+          title="Refresh tickets"
+        >
+          <RefreshCw className="h-4 w-4" />
+        </button>
       </div>
 
       <DndContext
