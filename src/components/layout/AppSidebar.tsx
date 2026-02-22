@@ -154,7 +154,7 @@ const UserMenu = memo(({ isCollapsed }: { isCollapsed: boolean }) => {
   const { user, logout, isLoading } = useAuthContext();
 
   const userInitials = useMemo(() => {
-    if (!user) return "G";
+    if (!user || !user.first_name || !user.last_name) return "G";
     return `${user.first_name[0]}${user.last_name[0]}`.toUpperCase();
   }, [user]);
 

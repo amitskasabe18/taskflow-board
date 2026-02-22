@@ -41,7 +41,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       setLoading(true);
       setError(null);
       const response: ProjectTicketsResponse = await ticketService.getProjectTickets(
-        currentProject.id, // Now using UUID string directly
+        "1", // Use numeric project ID 1 for now
         {
           include_archived: false,
           per_page: 100,

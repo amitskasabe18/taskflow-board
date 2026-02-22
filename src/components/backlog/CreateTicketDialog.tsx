@@ -18,17 +18,38 @@ import { ticketService, CreateTicketRequest } from "@/services/ticketService";
 interface CreateTicketDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  projectId: number;
+  projectId: string;
   onTicketCreated?: (ticket: any) => void;
 }
+
+// Mock users for assignee dropdown
+const mockUsers = [
+  { id: "1", name: "John Doe", email: "john@example.com" },
+  { id: "2", name: "Jane Smith", email: "jane@example.com" },
+  { id: "3", name: "Bob Wilson", email: "bob@example.com" },
+  { id: "4", name: "Alice Brown", email: "alice@example.com" },
+];
 
 export function CreateTicketDialog({ open, onOpenChange, projectId, onTicketCreated }: CreateTicketDialogProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [type, setType] = useState("task");
   const [priority, setPriority] = useState("medium");
+  const [assigneeId, setAssigneeId] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Extract numeric project ID from UUID if needed, or use as-is if already numeric
+  const getProjectId = () => {
+    // If projectId is already numeric, return as number
+    if (/^\d+$/.test(projectId)) {
+      return parseInt(projectId);
+    }
+    // If it's a UUID, we need to find the numeric ID
+    // For now, we'll use a hardcoded approach since we don't have a lookup service
+    // In a real app, you'd have a project service to map UUID to ID
+    return 1; // Default to project ID 1 for "Codeseed CMS"
+  };
 
   const ticketTypes = [
     { value: "task", label: "Task", icon: CheckCircle },
@@ -62,7 +83,8 @@ export function CreateTicketDialog({ open, onOpenChange, projectId, onTicketCrea
         description: description.trim() || undefined,
         type: type as any,
         priority: priority as any,
-        project_id: projectId,
+        project_id: getProjectId(), // Use helper function to get numeric ID
+        assignee_id: assigneeId ? parseInt(assigneeId) : undefined,
       };
 
       const response = await ticketService.createTicket(ticketData);
@@ -72,6 +94,7 @@ export function CreateTicketDialog({ open, onOpenChange, projectId, onTicketCrea
       setDescription("");
       setType("task");
       setPriority("medium");
+      setAssigneeId("");
       
       // Close dialog
       onOpenChange(false);
@@ -185,6 +208,32 @@ export function CreateTicketDialog({ open, onOpenChange, projectId, onTicketCrea
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+            
+            <div className="grid gap-2">
+              <Label htmlFor="assignee">Assignee</Label>
+              <Select value={assigneeId} onValueChange={setAssigneeId} disabled={isLoading}>
+                <SelectTrigger className="border-2 focus:border-primary/50">
+                  <SelectValue placeholder="Select assignee (optional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={null}>Unassigned</SelectItem>
+                  {mockUsers.map((user) => (
+                    <SelectItem key={user.id} value={user.id}>
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary-foreground text-xs font-medium">
+                          {user.name.split(' ').map((name, index) => (
+                            <span key={index} className="hidden">{name[0]}</span>
+                          ))}
+                          <span className="text-xs text-muted-foreground">
+                            {user.name.split(' ').slice(1).join(' ')}
+                          </span>
+                        </div>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           

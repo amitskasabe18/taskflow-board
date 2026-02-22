@@ -1,11 +1,19 @@
 import { useState, useMemo } from "react";
-import { Plus, RefreshCw, AlertCircle } from "lucide-react";
+import { Plus, RefreshCw, AlertCircle, ChevronDown } from "lucide-react";
 import { useAppState } from "@/context/AppContext";
 import { TicketCard } from "@/components/board/TicketCard";
 import { TicketDetailSheet } from "@/components/tickets/TicketDetailSheet";
+import { CreateTicketDialog } from "@/components/backlog/CreateTicketDialog";
 import { statusColumns, statusConfig, columnColors } from "@/lib/ticketUtils";
 import { Ticket, Status } from "@/types";
 import { cn } from "@/lib/utils";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   DndContext,
   DragOverlay,
@@ -41,9 +49,13 @@ function DroppableColumn({
 }
 
 export default function Board() {
-  const { tickets, updateTicket, loading, error, refreshTickets, currentProject } = useAppState();
+  const { tickets, updateTicket, loading, error, refreshTickets, currentProject, addTicket, setCurrentProject } = useAppState();
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [activeTicket, setActiveTicket] = useState<Ticket | null>(null);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [projects, setProjects] = useState([
+    { id: "6e972d92-0193-487f-91e8-f134bd4576fb", name: "Codeseed CMS", key: "CMS", description: "Main project for codeseed CMS" }
+  ]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
@@ -93,6 +105,47 @@ export default function Board() {
     }
   };
 
+  const handleTicketCreated = (newTicket: any) => {
+    // Transform the API response to match frontend Ticket format
+    const transformedTicket: Ticket = {
+      id: newTicket.uuid,
+      projectKey: newTicket.project?.key || 'CMS',
+      number: newTicket.key_sequence,
+      title: newTicket.title,
+      description: newTicket.description || '',
+      type: newTicket.type as any,
+      priority: newTicket.priority as any,
+      status: newTicket.status?.slug as any,
+      assigneeId: newTicket.assignee_id?.toString() || null,
+      reporterId: newTicket.reporter_id?.toString() || '',
+      sprintId: newTicket.sprint_id?.toString() || null,
+      storyPoints: newTicket.story_points,
+      labels: newTicket.labels?.map((label: any) => label.name) || [],
+      dueDate: newTicket.due_date,
+      linkedIssues: [],
+      comments: [],
+      createdAt: newTicket.created_at,
+      updatedAt: newTicket.updated_at,
+      estimate: newTicket.original_estimate_minutes ? `${newTicket.original_estimate_minutes}m` : null,
+    };
+    
+    addTicket(transformedTicket);
+    refreshTickets(); // Refresh to get the latest data
+  };
+
+  // Extract numeric project ID from UUID if needed, or use as-is if already numeric
+  const getProjectId = () => {
+    // For now, use hardcoded project ID 1 since backend expects numeric
+    return 1;
+  };
+
+  const handleProjectChange = (projectId: string) => {
+    const selectedProject = projects.find(p => p.id === projectId);
+    if (selectedProject) {
+      setCurrentProject(selectedProject);
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-6 h-full flex items-center justify-center">
@@ -130,13 +183,37 @@ export default function Board() {
             {currentProject.name} — {tickets.length} tickets
           </p>
         </div>
-        <button
-          onClick={refreshTickets}
-          className="p-2 text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors"
-          title="Refresh tickets"
-        >
-          <RefreshCw className="h-4 w-4" />
-        </button>
+        <div className="flex items-center gap-4">
+          <Select value={currentProject.id} onValueChange={handleProjectChange}>
+            <SelectTrigger className="w-[200px] border-2 focus:border-primary/50">
+              <SelectValue placeholder="Select project" />
+            </SelectTrigger>
+            <SelectContent>
+              {projects.map((project) => (
+                <SelectItem key={project.id} value={project.id}>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">{project.name}</span>
+                    <span className="text-muted-foreground text-sm">({project.key})</span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <button
+            onClick={() => setShowCreateDialog(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+          >
+            <Plus className="h-4 w-4" />
+            Create Ticket
+          </button>
+          <button
+            onClick={refreshTickets}
+            className="p-2 text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors"
+            title="Refresh tickets"
+          >
+            <RefreshCw className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
       <DndContext
@@ -193,6 +270,13 @@ export default function Board() {
         ticket={selectedTicket}
         open={!!selectedTicket}
         onOpenChange={(o) => !o && setSelectedTicket(null)}
+      />
+
+      <CreateTicketDialog
+        open={showCreateDialog}
+        onOpenChange={setShowCreateDialog}
+        projectId={currentProject.id}
+        onTicketCreated={handleTicketCreated}
       />
     </div>
   );
