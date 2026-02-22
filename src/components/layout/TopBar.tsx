@@ -1,4 +1,4 @@
-import { Search, Bell, Plus } from "lucide-react";
+import { Search, Bell, Plus, Menu } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { team } from "@/data/mockData";
@@ -8,9 +8,11 @@ interface TopBarProps {
   viewName: string;
   onCreateIssue: () => void;
   onSearchOpen: () => void;
+  onToggleSidebar?: () => void;
+  isSidebarCollapsed?: boolean;
 }
 
-export function TopBar({ viewName, onCreateIssue, onSearchOpen }: TopBarProps) {
+export function TopBar({ viewName, onCreateIssue, onSearchOpen, onToggleSidebar, isSidebarCollapsed }: TopBarProps) {
   const { currentProject } = useAppState();
   const onlineMembers = team.filter((m) => m.status === "available").slice(0, 3);
 
@@ -25,6 +27,15 @@ export function TopBar({ viewName, onCreateIssue, onSearchOpen }: TopBarProps) {
 
       {/* Right Side */}
       <div className="flex items-center gap-3">
+        {/* Sidebar Toggle */}
+        <button
+          onClick={onToggleSidebar}
+          className="rounded-md p-2 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+          aria-label="Toggle Sidebar"
+        >
+          <Menu className="h-4 w-4" />
+        </button>
+
         {/* Search */}
         <button
           onClick={onSearchOpen}
