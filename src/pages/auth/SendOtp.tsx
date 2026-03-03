@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate , Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -101,6 +101,11 @@ const SendOtp = () => {
               )}
             </Button>
           </form>
+          <div className="text-center mt-2">
+            <Link to="/auth/login" className="text-primary hover:underline font-medium">
+              Sign In
+            </Link>
+          </div>
         </CardContent>
       </Card>
     </div>

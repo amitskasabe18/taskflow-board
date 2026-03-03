@@ -152,17 +152,7 @@ const VerifyOtp = () => {
               </Button>
 
               <div className="flex gap-2">
-                <Button 
-                  type="button"
-                  variant="outline"
-                  onClick={handleBack}
-                  className="flex-1"
-                  disabled={isLoading}
-                >
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  Back
-                </Button>
-                
+                              
                 <Button 
                   type="button"
                   variant="outline"

@@ -1,5 +1,7 @@
 import { useState, useMemo } from "react";
-import { Plus, RefreshCw, AlertCircle, ChevronDown } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useTheme } from "@/contexts/ThemeContext";
+import { Plus, RefreshCw, AlertCircle } from "lucide-react";
 import { useAppState } from "@/context/AppContext";
 import { TicketCard } from "@/components/board/TicketCard";
 import { TicketDetailSheet } from "@/components/tickets/TicketDetailSheet";
@@ -7,13 +9,6 @@ import { CreateTicketDialog } from "@/components/backlog/CreateTicketDialog";
 import { statusColumns, statusConfig, columnColors } from "@/lib/ticketUtils";
 import { Ticket, Status } from "@/types";
 import { cn } from "@/lib/utils";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   DndContext,
   DragOverlay,
@@ -25,7 +20,7 @@ import {
   DragEndEvent,
   useDroppable,
 } from "@dnd-kit/core";
-import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import ProjectCard from "@/components/ProjectCard";
 
 function DroppableColumn({
   status,
@@ -49,13 +44,17 @@ function DroppableColumn({
 }
 
 export default function Board() {
-  const { tickets, updateTicket, loading, error, refreshTickets, currentProject, addTicket, setCurrentProject } = useAppState();
+  const { tickets, updateTicket, loading, error, refreshTickets, currentProject, addTicket } = useAppState();
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [activeTicket, setActiveTicket] = useState<Ticket | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [projects, setProjects] = useState([
     { id: "6e972d92-0193-487f-91e8-f134bd4576fb", name: "Codeseed CMS", key: "CMS", description: "Main project for codeseed CMS" }
   ]);
+  const [projectsLoading, setProjectsLoading] = useState(false);
+  
+  const navigate = useNavigate();
+  const { isDark } = useTheme();
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
@@ -133,20 +132,7 @@ export default function Board() {
     refreshTickets(); // Refresh to get the latest data
   };
 
-  // Extract numeric project ID from UUID if needed, or use as-is if already numeric
-  const getProjectId = () => {
-    // For now, use hardcoded project ID 1 since backend expects numeric
-    return 1;
-  };
-
-  const handleProjectChange = (projectId: string) => {
-    const selectedProject = projects.find(p => p.id === projectId);
-    if (selectedProject) {
-      setCurrentProject(selectedProject);
-    }
-  };
-
-  if (loading) {
+  if (loading && !projectsLoading) {
     return (
       <div className="p-6 h-full flex items-center justify-center">
         <div className="text-center">
@@ -176,107 +162,170 @@ export default function Board() {
 
   return (
     <div className="p-6 h-full">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Board</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {currentProject.name} — {tickets.length} tickets
-          </p>
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">My Projects</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Manage your projects and team collaborations
+            </p>
+          </div>
+          
+          {currentProject && (
+            <button
+              onClick={() => setShowCreateDialog(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+            >
+              <Plus className="h-4 w-4" />
+              Create Ticket
+            </button>
+          )}
         </div>
-        <div className="flex items-center gap-4">
-          <Select value={currentProject.id} onValueChange={handleProjectChange}>
-            <SelectTrigger className="w-[200px] border-2 focus:border-primary/50">
-              <SelectValue placeholder="Select project" />
-            </SelectTrigger>
-            <SelectContent>
-              {projects.map((project) => (
-                <SelectItem key={project.id} value={project.id}>
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">{project.name}</span>
-                    <span className="text-muted-foreground text-sm">({project.key})</span>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <button
-            onClick={() => setShowCreateDialog(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
-          >
-            <Plus className="h-4 w-4" />
-            Create Ticket
-          </button>
-          <button
-            onClick={refreshTickets}
-            className="p-2 text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors"
-            title="Refresh tickets"
-          >
-            <RefreshCw className="h-4 w-4" />
-          </button>
+
+        {/* Projects Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {projectsLoading ? (
+            <div className="col-span-full flex justify-center items-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500"></div>
+            </div>
+          ) : projects.length === 0 ? (
+            <div className="col-span-full text-center py-12">
+              <div className={`text-6xl mb-4 ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>
+                📁
+              </div>
+              <h3 className={`text-lg font-medium ${isDark ? 'text-white' : 'text-gray-900'} mb-2`}>
+                No projects yet
+              </h3>
+              <p className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'} mb-6`}>
+                Get started by creating your first project
+              </p>
+              <a
+                href="/projects/create"
+                className={`px-4 py-2 text-sm font-medium rounded-md text-white ${isDark ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-indigo-600 hover:bg-indigo-700'}`}
+              >
+                Create Your First Project
+              </a>
+            </div>
+          ) : (
+            projects.map((project) => (
+              <div
+                key={project.id}
+                onClick={() => navigate(`/board?project=${project.id}`)}
+                className="cursor-pointer hover:shadow-lg transition-shadow duration-200 hover:scale-105"
+              >
+                <ProjectCard
+                  project={project}
+                  onJoin={() => {/* Handle join if needed */}}
+                  onLeave={() => {/* Handle leave if needed */}}
+                />
+              </div>
+            ))
+          )}
         </div>
+
+        {/* Board Section - Only show if project is selected */}
+        {currentProject && (
+          <div className="mt-8 border-t pt-8">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-xl font-semibold text-foreground">
+                  {currentProject.name} Board
+                </h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {tickets.length} tickets
+                </p>
+              </div>
+              
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => setShowCreateDialog(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+                >
+                  <Plus className="h-4 w-4" />
+                  Create Ticket
+                </button>
+                <button
+                  onClick={refreshTickets}
+                  className="p-2 text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors"
+                  title="Refresh tickets"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Kanban Board */}
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCorners}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
+            >
+              <div className="grid grid-cols-4 gap-4 h-[calc(100vh-280px)]">
+                {columns.map(({ status, tickets: colTickets }) => {
+                  const sc = statusConfig[status];
+                  const cc = columnColors[status];
+                  return (
+                    <div key={status} className="flex flex-col rounded-lg bg-surface border border-border overflow-hidden">
+                      <div className="p-3 border-b border-border">
+                        <div className={cn("h-0.5 rounded-full mb-2.5", cc)} />
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold text-foreground">{sc.label}</span>
+                            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-accent text-[10px] font-medium text-muted-foreground">{colTickets.length}</span>
+                          </div>
+                          <button
+                            onClick={() => setShowCreateDialog(true)}
+                            className="rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                            aria-label={`Add ${sc.label} ticket`}
+                          >
+                            <Plus className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <DroppableColumn status={status}>
+                        {colTickets.map((ticket) => (
+                          <TicketCard
+                            key={ticket.id}
+                            ticket={ticket}
+                            onClick={() => setSelectedTicket(ticket)}
+                          />
+                        ))}
+                      </DroppableColumn>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <DragOverlay>
+                {activeTicket && (
+                  <TicketCard
+                    ticket={activeTicket}
+                    onClick={() => {}}
+                  />
+                )}
+              </DragOverlay>
+            </DndContext>
+          </div>
+        )}
       </div>
 
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCorners}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-      >
-        <div className="grid grid-cols-4 gap-4 h-[calc(100vh-180px)]">
-          {columns.map(({ status, tickets: colTickets }) => {
-            const sc = statusConfig[status];
-            const cc = columnColors[status];
-            return (
-              <div key={status} className="flex flex-col rounded-lg bg-surface border border-border overflow-hidden">
-                <div className="px-3 py-2.5 border-b border-border">
-                  <div className={cn("h-0.5 rounded-full mb-2.5", cc)} />
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-foreground">{sc.label}</span>
-                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-accent text-[10px] font-medium text-muted-foreground">{colTickets.length}</span>
-                    </div>
-                    <button className="rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors" aria-label={`Add ${sc.label} ticket`}>
-                      <Plus className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                </div>
-
-                <DroppableColumn status={status}>
-                  <SortableContext items={colTickets.map((t) => t.id)} strategy={verticalListSortingStrategy}>
-                    {colTickets.map((ticket) => (
-                      <TicketCard
-                        key={ticket.id}
-                        ticket={ticket}
-                        onClick={() => setSelectedTicket(ticket)}
-                      />
-                    ))}
-                  </SortableContext>
-                </DroppableColumn>
-              </div>
-            );
-          })}
-        </div>
-
-        <DragOverlay>
-          {activeTicket ? (
-            <div className="w-[280px] opacity-90 pointer-events-none">
-              <TicketCard ticket={activeTicket} onClick={() => {}} />
-            </div>
-          ) : null}
-        </DragOverlay>
-      </DndContext>
+      {/* Create Ticket Dialog */}
+      {currentProject && (
+        <CreateTicketDialog
+          open={showCreateDialog}
+          onOpenChange={setShowCreateDialog}
+          projectId={currentProject.id}
+          onTicketCreated={handleTicketCreated}
+        />
+      )}
 
       <TicketDetailSheet
         ticket={selectedTicket}
         open={!!selectedTicket}
         onOpenChange={(o) => !o && setSelectedTicket(null)}
-      />
-
-      <CreateTicketDialog
-        open={showCreateDialog}
-        onOpenChange={setShowCreateDialog}
-        projectId={currentProject.id}
-        onTicketCreated={handleTicketCreated}
       />
     </div>
   );

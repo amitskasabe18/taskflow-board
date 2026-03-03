@@ -263,6 +263,19 @@ export const ticketService = {
   },
 
   /**
+   * Get users for a specific project
+   */
+  async getProjectUsers(projectId: string): Promise<any> {
+    try {
+      const response = await api.get(`/api/v1/users/${projectId}`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Failed to fetch project users:', error);
+      throw new Error('Failed to fetch project users. Please try again.');
+    }
+  },
+
+  /**
    * Get tickets for a project with filtering and pagination
    */
   async getProjectTickets(projectId: string, filters?: ProjectTicketsFilters): Promise<ProjectTicketsResponse> {

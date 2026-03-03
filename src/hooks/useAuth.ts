@@ -47,7 +47,12 @@ export const useAuth = (): AuthContextType => {
 
       if (response.ok) {
         const result = await response.json();
+        console.log('User profile response:', result); // Debug log
         if (result.success && result.data) {
+          // Backend returns data as array, take first user
+          if (Array.isArray(result.data) && result.data.length > 0) {
+            return result.data[0];
+          }
           return result.data;
         }
       }

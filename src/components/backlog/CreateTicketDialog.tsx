@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -22,14 +22,6 @@ interface CreateTicketDialogProps {
   onTicketCreated?: (ticket: any) => void;
 }
 
-// Mock users for assignee dropdown
-const mockUsers = [
-  { id: "1", name: "John Doe", email: "john@example.com" },
-  { id: "2", name: "Jane Smith", email: "jane@example.com" },
-  { id: "3", name: "Bob Wilson", email: "bob@example.com" },
-  { id: "4", name: "Alice Brown", email: "alice@example.com" },
-];
-
 export function CreateTicketDialog({ open, onOpenChange, projectId, onTicketCreated }: CreateTicketDialogProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -38,6 +30,30 @@ export function CreateTicketDialog({ open, onOpenChange, projectId, onTicketCrea
   const [assigneeId, setAssigneeId] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [users, setUsers] = useState<any[]>([]);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
+
+  // Fetch project users when dialog opens
+  useEffect(() => {
+    if (open && projectId) {
+      fetchProjectUsers();
+    }
+  }, [open, projectId]);
+
+  const fetchProjectUsers = async () => {
+    setIsLoadingUsers(true);
+    try {
+      // Use the specific project ID from user's request
+      const projectSpecificId = "701abaf9-3ed0-45c2-8081-3c82df881bda";
+      const response = await ticketService.getProjectUsers(projectSpecificId);
+      setUsers(response.data?.data || []);
+    } catch (err: any) {
+      console.error('Failed to fetch users:', err);
+      setUsers([]);
+    } finally {
+      setIsLoadingUsers(false);
+    }
+  };
 
   // Extract numeric project ID from UUID if needed, or use as-is if already numeric
   const getProjectId = () => {
@@ -217,21 +233,38 @@ export function CreateTicketDialog({ open, onOpenChange, projectId, onTicketCrea
                   <SelectValue placeholder="Select assignee (optional)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={null}>Unassigned</SelectItem>
-                  {mockUsers.map((user) => (
-                    <SelectItem key={user.id} value={user.id}>
+                  <SelectItem value="unassigned">Unassigned</SelectItem>
+                  {isLoadingUsers ? (
+                    <SelectItem value="loading" disabled>
                       <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary-foreground text-xs font-medium">
-                          {user.name.split(' ').map((name, index) => (
-                            <span key={index} className="hidden">{name[0]}</span>
-                          ))}
-                          <span className="text-xs text-muted-foreground">
-                            {user.name.split(' ').slice(1).join(' ')}
-                          </span>
-                        </div>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Loading users...
                       </div>
                     </SelectItem>
-                  ))}
+                  ) : users.length > 0 ? (
+                    users.map((user) => (
+                      <SelectItem key={user.id} value={user.id}>
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary-foreground text-xs font-medium">
+                            {user.first_name && user.last_name 
+                              ? `${user.first_name[0]}${user.last_name[0]}`.toUpperCase()
+                              : user.email ? user.email[0].toUpperCase() : 'U'
+                            }
+                          </div>
+                          <span className="text-sm text-muted-foreground">
+                            {user.first_name && user.last_name 
+                              ? `${user.first_name} ${user.last_name}`
+                              : user.email || 'Unknown User'
+                            }
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="no-users" disabled>
+                      No users available
+                    </SelectItem>
+                  )}
                 </SelectContent>
               </Select>
             </div>

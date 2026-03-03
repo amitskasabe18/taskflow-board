@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Shield, ArrowLeft, Mail } from "lucide-react";
+import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import api from "@/services/api";
 import { useAuthContext } from "@/contexts/AuthContext";
@@ -172,33 +173,6 @@ const LoginPage = () => {
               )}
             </Button>
 
-            {/* Action Buttons */}
-            <div className="space-y-3">
-              <div className="flex gap-2">
-                <Button 
-                  type="button"
-                  variant="outline"
-                  onClick={handleBack}
-                  className="flex-1"
-                  disabled={isLoading}
-                >
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  Back
-                </Button>
-                
-                <Button 
-                  type="button"
-                  variant="outline"
-                  onClick={handleOtpLogin}
-                  className="flex-1"
-                  disabled={isLoading}
-                >
-                  <Mail className="mr-2 h-4 w-4" />
-                  OTP Login
-                </Button>
-              </div>
-            </div>
-
             {/* Help Text */}
             <div className="text-center text-sm text-muted-foreground">
               <p>Don't have an account?{' '}
@@ -212,6 +186,11 @@ const LoginPage = () => {
               </p>
             </div>
           </form>
+          <div className="text-center mt-2">
+            <Link to="/" className="text-primary hover:underline font-medium">
+              Back To Home
+            </Link>
+          </div>
         </CardContent>
       </Card>
     </div>

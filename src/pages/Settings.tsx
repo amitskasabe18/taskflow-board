@@ -246,7 +246,7 @@ const Settings = () => {
   };
 
   const getUserInitials = () => {
-    if (!user) return 'G';
+    if (!user || !user.first_name || !user.last_name) return 'G';
     return `${user.first_name[0]}${user.last_name[0]}`.toUpperCase();
   };
 
