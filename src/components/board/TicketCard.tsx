@@ -13,8 +13,8 @@ interface Props {
 
 export function TicketCard({ ticket, onClick }: Props) {
   const assignee = team.find((m) => m.id === ticket.assigneeId);
-  const pc = priorityConfig[ticket.priority];
-  const tc = typeConfig[ticket.type];
+  const pc = priorityConfig[ticket.priority] || { className: "", emoji: "📋", label: "Unknown" };
+  const tc = typeConfig[ticket.type] || { className: "", emoji: "📋", label: "Unknown" };
 
   const {
     attributes,

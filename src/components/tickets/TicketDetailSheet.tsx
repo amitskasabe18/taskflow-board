@@ -7,11 +7,38 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAppState } from "@/context/AppContext";
-import { team } from "@/data/mockData";
 import { Ticket, Priority, Status } from "@/types";
 import { statusConfig, typeConfig, priorityConfig } from "@/lib/ticketUtils";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
+import { useQuery } from "@tanstack/react-query";
+import axios from "axios";
+
+// API User interface
+interface ApiUser {
+  id: number;
+  uuid: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  role: string;
+  is_active: boolean;
+  organisation_id: number;
+  profile_photo_path: string | null;
+}
+
+// Transform API user to team member format
+const transformApiUser = (user: ApiUser) => ({
+  id: user.id.toString(),
+  name: `${user.first_name} ${user.last_name}`,
+  role: user.role,
+  avatarColor: `hsl(${Math.random() * 360}, 70%, 60%)`, // Generate random color
+  initials: user.first_name && user.last_name 
+    ? `${user.first_name[0]}${user.last_name[0]}`.toUpperCase()
+    : user.email ? user.email[0].toUpperCase() : 'U',
+  status: "available" as const,
+});
 
 interface Props {
   ticket: Ticket | null;
@@ -24,11 +51,31 @@ export function TicketDetailSheet({ ticket, open, onOpenChange }: Props) {
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState("");
 
+  // Fetch API users for assignee dropdown
+  const { data: usersData, isLoading: isLoadingUsers } = useQuery({
+    queryKey: ['project-users'],
+    queryFn: async () => {
+      const token = localStorage.getItem('auth_token');
+      const response = await axios.get('http://localhost:8000/api/v1/users/845646bb-a9ca-4469-9c3d-bdae3af6798b', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      return response.data.data || [];
+    },
+    enabled: open
+  });
+
+  // Transform API users to team member format
+  const team = usersData ? usersData.map(transformApiUser) : [];
+
   if (!ticket) return null;
   const assignee = team.find((m) => m.id === ticket.assigneeId);
   const reporter = team.find((m) => m.id === ticket.reporterId);
-  const tc = typeConfig[ticket.type];
-  const sc = statusConfig[ticket.status];
+  const tc = typeConfig[ticket.type] || { className: "", emoji: "📋", label: "Unknown" };
+  const sc = statusConfig[ticket.status] || { className: "", label: "Unknown", color: "" };
+  const pc = priorityConfig[ticket.priority] || { className: "", emoji: "📋", label: "Unknown" };
 
   const startEditTitle = () => { setTitleDraft(ticket.title); setEditingTitle(true); };
   const saveTitle = () => { if (titleDraft.trim()) updateTicket(ticket.id, { title: titleDraft }); setEditingTitle(false); };
@@ -75,7 +122,18 @@ export function TicketDetailSheet({ ticket, open, onOpenChange }: Props) {
             <div className="grid grid-cols-2 gap-4">
               <Field label="Assignee">
                 <Select value={ticket.assigneeId || ""} onValueChange={(v) => updateTicket(ticket.id, { assigneeId: v })}>
-                  <SelectTrigger className="bg-background border-border h-8 text-sm"><SelectValue placeholder="Unassigned" /></SelectTrigger>
+                  <SelectTrigger className="bg-background border-border h-8 text-sm">
+                    <SelectValue placeholder="Unassigned">
+                      {assignee && (
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-4 w-4">
+                            <AvatarFallback className="text-[8px] font-semibold" style={{ backgroundColor: assignee.avatarColor, color: "white" }}>{assignee.initials}</AvatarFallback>
+                          </Avatar>
+                          {assignee.name}
+                        </div>
+                      )}
+                    </SelectValue>
+                  </SelectTrigger>
                   <SelectContent className="bg-popover border-border">
                     {team.map((m) => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
                   </SelectContent>
@@ -93,7 +151,11 @@ export function TicketDetailSheet({ ticket, open, onOpenChange }: Props) {
               </Field>
               <Field label="Priority">
                 <Select value={ticket.priority} onValueChange={(v) => updateTicket(ticket.id, { priority: v as Priority })}>
-                  <SelectTrigger className="bg-background border-border h-8 text-sm"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="bg-background border-border h-8 text-sm">
+                    <SelectValue placeholder="Select priority">
+                      {pc.emoji} {pc.label}
+                    </SelectValue>
+                  </SelectTrigger>
                   <SelectContent className="bg-popover border-border">
                     {Object.entries(priorityConfig).map(([k, v]) => <SelectItem key={k} value={k}>{v.emoji} {v.label}</SelectItem>)}
                   </SelectContent>
@@ -121,7 +183,12 @@ export function TicketDetailSheet({ ticket, open, onOpenChange }: Props) {
             {/* Description */}
             <div>
               <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-1.5 block">Description</label>
-              <Textarea value={ticket.description} onChange={(e) => updateTicket(ticket.id, { description: e.target.value })} rows={4} className="bg-background border-border resize-none text-sm" />
+              <RichTextEditor
+                value={ticket.description || ""}
+                onChange={(value) => updateTicket(ticket.id, { description: value })}
+                placeholder="Enter ticket description..."
+                className="border-2 focus:border-primary/50"
+              />
             </div>
           </TabsContent>
 
@@ -136,7 +203,7 @@ export function TicketDetailSheet({ ticket, open, onOpenChange }: Props) {
                     </Avatar>
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-foreground">{author?.name}</span>
+                        <span className="text-sm font-medium text-foreground">{author?.name || 'Unknown User'}</span>
                         <span className="text-xs text-muted-foreground">{format(new Date(c.createdAt), "MMM d, h:mm a")}</span>
                       </div>
                       <p className="text-sm text-foreground/80 mt-1">{c.text}</p>

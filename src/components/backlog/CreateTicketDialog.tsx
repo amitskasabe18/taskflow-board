@@ -10,10 +10,11 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Bug, AlertCircle, CheckCircle, Loader2 } from "lucide-react";
 import { ticketService, CreateTicketRequest } from "@/services/ticketService";
+import axios from "axios";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 
 interface CreateTicketDialogProps {
   open: boolean;
@@ -28,6 +29,8 @@ export function CreateTicketDialog({ open, onOpenChange, projectId, onTicketCrea
   const [type, setType] = useState("task");
   const [priority, setPriority] = useState("medium");
   const [assigneeId, setAssigneeId] = useState("");
+  const [storyPoints, setStoryPoints] = useState("");
+  const [attachments, setAttachments] = useState<File[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [users, setUsers] = useState<any[]>([]);
@@ -43,10 +46,19 @@ export function CreateTicketDialog({ open, onOpenChange, projectId, onTicketCrea
   const fetchProjectUsers = async () => {
     setIsLoadingUsers(true);
     try {
-      // Use the specific project ID from user's request
-      const projectSpecificId = "701abaf9-3ed0-45c2-8081-3c82df881bda";
-      const response = await ticketService.getProjectUsers(projectSpecificId);
-      setUsers(response.data?.data || []);
+      // Make direct axios call to the API
+      const token = localStorage.getItem('auth_token');
+      const response = await axios.get('http://localhost:8000/api/v1/users/845646bb-a9ca-4469-9c3d-bdae3af6798b', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('Users API response:', response.data);
+      console.log('Users data:', response.data.data);
+      
+      setUsers(response.data.data || []);
     } catch (err: any) {
       console.error('Failed to fetch users:', err);
       setUsers([]);
@@ -65,6 +77,109 @@ export function CreateTicketDialog({ open, onOpenChange, projectId, onTicketCrea
     // For now, we'll use a hardcoded approach since we don't have a lookup service
     // In a real app, you'd have a project service to map UUID to ID
     return 1; // Default to project ID 1 for "Codeseed CMS"
+  };
+
+  const handleFileSelect = (files: FileList | null) => {
+    if (!files) return;
+    const newFiles = Array.from(files);
+    setAttachments(prev => [...prev, ...newFiles]);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const files = e.dataTransfer.files;
+    if (files) {
+      handleFileSelect(files);
+    }
+  };
+
+  const removeAttachment = (index: number) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const getFileIcon = (mimeType: string): string => {
+    if (mimeType.startsWith('image/')) return '🖼️';
+    if (mimeType.startsWith('video/')) return '🎥';
+    if (mimeType.startsWith('audio/')) return '🎵';
+    if (mimeType.includes('pdf')) return '📄';
+    if (mimeType.includes('word')) return '📝';
+    if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) return '📊';
+    if (mimeType.includes('powerpoint') || mimeType.includes('presentation')) return '📽️';
+    if (mimeType.includes('zip') || mimeType.includes('rar') || mimeType.includes('tar')) return '🗜️';
+    return '📎'; // Default file icon
+  };
+
+  const createPreviewUrl = (file: File): string => {
+    return URL.createObjectURL(file);
+  };
+
+  const renderAttachmentPreview = (file: File, index: number) => {
+    const fileType = file.type.split('/')[0];
+    const previewUrl = createPreviewUrl(file);
+
+    if (fileType === 'image') {
+      return (
+        <div className="flex items-center gap-3 p-2 bg-muted/50 rounded-md">
+          <img 
+            src={previewUrl} 
+            alt={file.name}
+            className="w-16 h-16 object-cover rounded-md border"
+          />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium truncate">{file.name}</p>
+            <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
+          </div>
+        </div>
+      );
+    } else if (fileType === 'video') {
+      return (
+        <div className="flex items-center gap-3 p-2 bg-muted/50 rounded-md">
+          <div className="relative">
+            <video 
+              src={previewUrl}
+              className="w-16 h-16 object-cover rounded-md border"
+              muted
+            />
+            <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-md">
+              <div className="w-6 h-6 bg-white/80 rounded-full flex items-center justify-center">
+                <div className="w-0 h-0 border-l-8 border-l-white border-t-4 border-b-4 transform -translate-x-1"></div>
+              </div>
+            </div>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium truncate">{file.name}</p>
+            <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
+          </div>
+        </div>
+      );
+    } else {
+      return (
+        <div className="flex items-center gap-3 p-2 bg-muted/50 rounded-md">
+          <div className="w-16 h-16 bg-muted rounded-md flex items-center justify-center text-2xl border">
+            {getFileIcon(file.type)}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium truncate">{file.name}</p>
+            <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
+          </div>
+        </div>
+      );
+    }
   };
 
   const ticketTypes = [
@@ -100,8 +215,13 @@ export function CreateTicketDialog({ open, onOpenChange, projectId, onTicketCrea
         type: type as any,
         priority: priority as any,
         project_id: getProjectId(), // Use helper function to get numeric ID
-        assignee_id: assigneeId ? parseInt(assigneeId) : undefined,
+        assignee_id: assigneeId && assigneeId !== "unassigned" ? parseInt(assigneeId) : undefined,
+        story_points: storyPoints ? parseFloat(storyPoints) : undefined,
       };
+
+      console.log('Creating ticket with data:', ticketData);
+      console.log('Selected assigneeId:', assigneeId);
+      console.log('Available users:', users);
 
       const response = await ticketService.createTicket(ticketData);
       
@@ -111,6 +231,8 @@ export function CreateTicketDialog({ open, onOpenChange, projectId, onTicketCrea
       setType("task");
       setPriority("medium");
       setAssigneeId("");
+      setStoryPoints("");
+      setAttachments([]);
       
       // Close dialog
       onOpenChange(false);
@@ -145,7 +267,7 @@ export function CreateTicketDialog({ open, onOpenChange, projectId, onTicketCrea
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[800px] max-w-[90vw] max-h-[90vh] my-8 overflow-y-auto scrollbar-hide">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Plus className="h-5 w-5 text-primary" />
@@ -178,15 +300,71 @@ export function CreateTicketDialog({ open, onOpenChange, projectId, onTicketCrea
             
             <div className="grid gap-2">
               <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                placeholder="Enter ticket description..."
+              <RichTextEditor
                 value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                disabled={isLoading}
-                rows={4}
+                onChange={setDescription}
+                placeholder="Enter ticket description..."
                 className="border-2 focus:border-primary/50"
               />
+            </div>
+            
+            {/* Attachments Section */}
+            <div className="grid gap-2">
+              <Label htmlFor="attachments">Attachments</Label>
+              <div
+                className="border-2 border-dashed border-muted-foreground/30 rounded-lg p-6 text-center transition-colors hover:border-primary/50 focus-within:border-primary/50"
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+              >
+                <input
+                  id="attachments"
+                  type="file"
+                  multiple
+                  accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar,.gif,.png,.jpg,.jpeg,.mp4,.avi,.mov,.wmv,.flv,.webm"
+                  onChange={(e) => handleFileSelect(e.target.files)}
+                  className="hidden"
+                />
+                <div className="space-y-2">
+                  <div className="text-muted-foreground">
+                    <svg className="mx-auto h-12 w-12 text-muted-foreground/50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 8.09 4.5 4.5 0 00-4.5 4.5 4.5 0 00-4.5-4.5 4.5 4.5 0 00-4.5 4.5zm0 0L14 18m-7-7h7m-7 0v7" />
+                    </svg>
+                    <p className="mt-2 text-sm font-medium">Drag & drop files here, or click to browse</p>
+                    <p className="text-xs">Support for images, videos, documents and archives</p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => document.getElementById('attachments')?.click()}
+                    className="mx-auto"
+                  >
+                    Choose Files
+                  </Button>
+                </div>
+              </div>
+              
+              {/* Attachment List */}
+              {attachments.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  <p className="text-sm font-medium text-muted-foreground">Attached Files:</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {attachments.map((file, index) => (
+                      <div key={index} className="relative group">
+                        {renderAttachmentPreview(file, index)}
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeAttachment(index)}
+                          className="absolute top-1 right-1 h-6 w-6 p-0 bg-background/80 hover:bg-background text-muted-foreground hover:text-destructive rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          ×
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
             
             <div className="grid grid-cols-2 gap-4">
@@ -224,6 +402,22 @@ export function CreateTicketDialog({ open, onOpenChange, projectId, onTicketCrea
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+            
+            <div className="grid gap-2">
+              <Label htmlFor="storyPoints">Story Points</Label>
+              <Input
+                id="storyPoints"
+                type="number"
+                min="0"
+                max="999"
+                step="0.5"
+                placeholder="Enter story points (optional)"
+                value={storyPoints}
+                onChange={(e) => setStoryPoints(e.target.value)}
+                disabled={isLoading}
+                className="border-2 focus:border-primary/50"
+              />
             </div>
             
             <div className="grid gap-2">
