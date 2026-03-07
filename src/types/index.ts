@@ -19,6 +19,21 @@ export interface Comment {
   createdAt: string;
 }
 
+export interface Attachment {
+  id: number;
+  filename: string;
+  mime_type: string;
+  size: number;
+  path: string;
+  disk: string;
+  uploader: {
+    id: number;
+    name: string;
+    email: string;
+  };
+  created_at: string;
+}
+
 export interface Ticket {
   id: string;
   projectKey: string;
@@ -36,6 +51,7 @@ export interface Ticket {
   dueDate: string | null;
   linkedIssues: string[];
   comments: Comment[];
+  attachments?: Attachment[];
   createdAt: string;
   updatedAt: string;
   estimate: string | null;

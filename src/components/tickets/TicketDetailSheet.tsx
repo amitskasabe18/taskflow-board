@@ -1,19 +1,19 @@
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAppState } from "@/context/AppContext";
-import { Ticket, Priority, Status } from "@/types";
+import { Ticket, Priority, Status, Attachment } from "@/types";
 import { statusConfig, typeConfig, priorityConfig } from "@/lib/ticketUtils";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
+import { Paperclip, Download, FileText, Image, Film, Archive, Eye, X } from "lucide-react";
 
 // API User interface
 interface ApiUser {
@@ -50,6 +50,52 @@ export function TicketDetailSheet({ ticket, open, onOpenChange }: Props) {
   const { updateTicket, sprints } = useAppState();
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState("");
+  const [previewAttachment, setPreviewAttachment] = useState<Attachment | null>(null);
+
+  const closePreview = () => {
+    setPreviewAttachment(null);
+  };
+
+  useEffect(() => {
+    const handleEsc = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && previewAttachment) {
+        closePreview();
+      }
+    };
+
+    document.addEventListener("keydown", handleEsc);
+    return () => document.removeEventListener("keydown", handleEsc);
+  }, [previewAttachment]);
+
+  useEffect(() => {
+    if (!open) {
+      setPreviewAttachment(null);
+    }
+  }, [open]);
+
+
+  // Helper function to get file icon based on MIME type
+  const getFileIcon = (mimeType: string) => {
+    if (mimeType.startsWith('image/')) return Image;
+    if (mimeType.startsWith('video/')) return Film;
+    if (mimeType.includes('pdf') || mimeType.includes('document')) return FileText;
+    if (mimeType.includes('zip') || mimeType.includes('rar') || mimeType.includes('tar')) return Archive;
+    return Paperclip;
+  };
+
+  // Helper function to format file size
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  // Helper function to get file URL
+  const getFileUrl = (path: string) => {
+    return `http://localhost:8000/storage/${path}`;
+  };
 
   // Fetch API users for assignee dropdown
   const { data: usersData, isLoading: isLoadingUsers } = useQuery({
@@ -81,26 +127,32 @@ export function TicketDetailSheet({ ticket, open, onOpenChange }: Props) {
   const saveTitle = () => { if (titleDraft.trim()) updateTicket(ticket.id, { title: titleDraft }); setEditingTitle(false); };
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-[600px] sm:max-w-[600px] bg-surface border-border overflow-y-auto p-0">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-mono text-muted-foreground">{ticket.projectKey}-{ticket.number}</span>
-            <Badge variant="outline" className="text-xs">{tc.emoji} {tc.label}</Badge>
-          </div>
-          <Select value={ticket.status} onValueChange={(v) => updateTicket(ticket.id, { status: v as Status })}>
-            <SelectTrigger className={cn("w-auto gap-1.5 border-none bg-accent text-xs font-medium h-7", sc.color)}>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="bg-popover border-border">
-              <SelectItem value="todo">Todo</SelectItem>
-              <SelectItem value="in_progress">In Progress</SelectItem>
-              <SelectItem value="in_review">In Review</SelectItem>
-              <SelectItem value="done">Done</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+    <>
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent className="overflow-y-auto" style={{ width: '1000px', maxWidth: '95vw' }}>
+          <SheetHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <SheetTitle className="text-sm font-medium">
+                  {ticket.projectKey}-{ticket.number}
+                </SheetTitle>
+                <Badge className={cn("text-xs", "className" in tc ? tc.className : "")}>
+                  {tc.emoji} {tc.label}
+                </Badge>
+              </div>
+              <Select value={ticket.status} onValueChange={(v) => updateTicket(ticket.id, { status: v as Status })}>
+                <SelectTrigger className={cn("w-auto gap-1.5 border-none bg-accent text-xs font-medium h-7", sc.color)}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-popover border-border">
+                  <SelectItem value="todo">Todo</SelectItem>
+                  <SelectItem value="in_progress">In Progress</SelectItem>
+                  <SelectItem value="in_review">In Review</SelectItem>
+                  <SelectItem value="done">Done</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </SheetHeader>
 
         {/* Title */}
         <div className="px-6 py-4">
@@ -114,6 +166,7 @@ export function TicketDetailSheet({ ticket, open, onOpenChange }: Props) {
         <Tabs defaultValue="details" className="px-6">
           <TabsList className="bg-accent border border-border">
             <TabsTrigger value="details">Details</TabsTrigger>
+            <TabsTrigger value="attachments">Attachments ({ticket.attachments?.length || 0})</TabsTrigger>
             <TabsTrigger value="activity">Activity</TabsTrigger>
           </TabsList>
 
@@ -192,6 +245,72 @@ export function TicketDetailSheet({ ticket, open, onOpenChange }: Props) {
             </div>
           </TabsContent>
 
+          <TabsContent value="attachments" className="pt-4">
+            <div className="space-y-4">
+              {(!ticket.attachments || ticket.attachments.length === 0) ? (
+                <div className="text-center py-8">
+                  <Paperclip className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                  <p className="text-sm text-muted-foreground">No attachments yet</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-3">
+                  {ticket.attachments.map((attachment) => {
+                    const FileIcon = getFileIcon(attachment.mime_type);
+                    const isImage = attachment.mime_type.startsWith('image/');
+                    return (
+                      <div key={attachment.id} className="flex items-center gap-3 p-3 border rounded-lg bg-card hover:bg-accent transition-colors">
+                        <div className="flex-shrink-0">
+                          {isImage ? (
+                            <div className="w-8 h-8 rounded overflow-hidden">
+                              <img 
+                                src={getFileUrl(attachment.path)} 
+                                alt={attachment.filename}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          ) : (
+                            <FileIcon className="w-8 h-8 text-muted-foreground" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-foreground truncate">
+                            {attachment.filename}
+                          </p>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <span>{formatFileSize(attachment.size)}</span>
+                            <span>•</span>
+                            <span>{format(new Date(attachment.created_at), "MMM d, yyyy")}</span>
+                            <span>•</span>
+                            <span>by {attachment.uploader.name}</span>
+                          </div>
+                        </div>
+                        <div className="flex-shrink-0 flex gap-1">
+                          {isImage && (
+                            <button
+                              onClick={() => setPreviewAttachment(attachment)}
+                              className="p-2 rounded-md hover:bg-accent transition-colors"
+                              title="Preview image"
+                            >
+                              <Eye className="w-4 h-4 text-muted-foreground hover:text-foreground" />
+                            </button>
+                          )}
+                          <a
+                            href={getFileUrl(attachment.path)}
+                            download={attachment.filename}
+                            className="p-2 rounded-md hover:bg-accent transition-colors"
+                            title="Download attachment"
+                          >
+                            <Download className="w-4 h-4 text-muted-foreground hover:text-foreground" />
+                          </a>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
           <TabsContent value="activity" className="pt-4">
             <div className="space-y-4">
               {ticket.comments.map((c) => {
@@ -215,8 +334,46 @@ export function TicketDetailSheet({ ticket, open, onOpenChange }: Props) {
             </div>
           </TabsContent>
         </Tabs>
-      </SheetContent>
-    </Sheet>
+        </SheetContent>
+      </Sheet>
+
+      {/* Image Preview Modal */}
+      {previewAttachment && (
+        <div
+          className="fixed inset-0 z-[9999] bg-black/80 pointer-events-auto"
+          onClick={(e) => {
+            e.stopPropagation();
+            closePreview();
+          }}
+        >
+          <div className="flex h-full w-full items-center justify-center p-4 pointer-events-none">
+            <div
+              className="relative max-w-4xl max-h-full bg-white rounded-lg overflow-hidden pointer-events-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  closePreview();
+                }}
+                className="absolute top-3 right-3 z-[10000] p-3 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-lg"
+                title="Close preview"
+                type="button"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              <div className="p-4 bg-gray-50">
+                <img
+                  src={getFileUrl(previewAttachment.path)}
+                  alt={previewAttachment.filename}
+                  className="max-w-full max-h-[80vh] object-contain mx-auto"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 

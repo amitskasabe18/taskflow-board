@@ -9,6 +9,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ProjectProvider } from "@/context/ProjectContext";
 import { AppLayout } from "@/components/layout/AppLayout";
 import Board from "./pages/Board";
+import ProjectBoard from "./pages/ProjectBoard";
 import Backlog from "./pages/Backlog";
 import Sprints from "./pages/Sprints";
 import Team from "./pages/Team";
@@ -85,6 +86,17 @@ const App = () => (
                     <ProjectProvider>
                       <AppLayout>
                         <Board />
+                      </AppLayout>
+                    </ProjectProvider>
+                  </AppProvider>
+                </ProtectedRoute>
+              } />
+              <Route path="/:projectUuid/board" element={
+                <ProtectedRoute>
+                  <AppProvider>
+                    <ProjectProvider>
+                      <AppLayout>
+                        <ProjectBoard />
                       </AppLayout>
                     </ProjectProvider>
                   </AppProvider>

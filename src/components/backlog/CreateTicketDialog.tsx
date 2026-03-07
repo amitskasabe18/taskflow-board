@@ -69,14 +69,9 @@ export function CreateTicketDialog({ open, onOpenChange, projectId, onTicketCrea
 
   // Extract numeric project ID from UUID if needed, or use as-is if already numeric
   const getProjectId = () => {
-    // If projectId is already numeric, return as number
-    if (/^\d+$/.test(projectId)) {
-      return parseInt(projectId);
-    }
-    // If it's a UUID, we need to find the numeric ID
-    // For now, we'll use a hardcoded approach since we don't have a lookup service
-    // In a real app, you'd have a project service to map UUID to ID
-    return 1; // Default to project ID 1 for "Codeseed CMS"
+    // Return the project ID as-is (can be either UUID or numeric ID)
+    // The backend will handle both formats
+    return projectId;
   };
 
   const handleFileSelect = (files: FileList | null) => {
@@ -209,21 +204,37 @@ export function CreateTicketDialog({ open, onOpenChange, projectId, onTicketCrea
     setIsLoading(true);
 
     try {
-      const ticketData: CreateTicketRequest = {
-        title: title.trim(),
-        description: description.trim() || undefined,
-        type: type as any,
-        priority: priority as any,
-        project_id: getProjectId(), // Use helper function to get numeric ID
-        assignee_id: assigneeId && assigneeId !== "unassigned" ? parseInt(assigneeId) : undefined,
-        story_points: storyPoints ? parseFloat(storyPoints) : undefined,
-      };
+      // Create FormData for file upload
+      const formData = new FormData();
+      
+      // Add ticket data
+      formData.append('title', title.trim());
+      if (description.trim()) {
+        formData.append('description', description.trim());
+      }
+      formData.append('type', type);
+      formData.append('priority', priority);
+      formData.append('project_id', getProjectId().toString());
+      
+      if (assigneeId && assigneeId !== "unassigned") {
+        formData.append('assignee_id', assigneeId);
+      }
+      
+      if (storyPoints) {
+        formData.append('story_points', storyPoints);
+      }
 
-      console.log('Creating ticket with data:', ticketData);
+      // Add attachments
+      attachments.forEach((file, index) => {
+        formData.append(`attachments[${index}]`, file);
+      });
+
+      console.log('Creating ticket with FormData:', formData);
       console.log('Selected assigneeId:', assigneeId);
       console.log('Available users:', users);
+      console.log('Attachments count:', attachments.length);
 
-      const response = await ticketService.createTicket(ticketData);
+      const response = await ticketService.createProjectTicketWithAttachments(projectId, formData);
       
       // Reset form
       setTitle("");

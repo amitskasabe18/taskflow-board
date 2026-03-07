@@ -37,9 +37,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [error, setError] = useState<string | null>(null);
 
   const refreshTickets = async () => {
+    setLoading(true);
+    setError(null);
+    
     try {
-      setLoading(true);
-      setError(null);
       const response: ProjectTicketsResponse = await ticketService.getProjectTickets(
         "1", // Use numeric project ID 1 for now
         {
@@ -51,7 +52,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       );
       
       // Transform API tickets to frontend format
-      const transformedTickets: Ticket[] = response.data.tickets.map(apiTicket => ({
+      const transformedTickets: Ticket[] = response.data.tickets.map(apiTicket => {
+        const transformed = {
         id: apiTicket.uuid,
         projectKey: apiTicket.project?.key || 'PROJ',
         number: apiTicket.key_sequence,
@@ -68,10 +70,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         dueDate: apiTicket.due_date,
         linkedIssues: [],
         comments: [],
+        attachments: (apiTicket as any).attachments || [],
         createdAt: apiTicket.created_at,
         updatedAt: apiTicket.updated_at,
         estimate: apiTicket.original_estimate_minutes ? `${apiTicket.original_estimate_minutes}m` : null,
-      }));
+      };
+        return transformed;
+      });
       
       setTickets(transformedTickets);
     } catch (err: any) {

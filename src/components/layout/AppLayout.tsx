@@ -22,7 +22,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const location = useLocation();
   const [createOpen, setCreateOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
   const viewName = viewNames[location.pathname] || "Board";
 
   useEffect(() => {

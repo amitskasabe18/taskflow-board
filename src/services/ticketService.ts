@@ -5,7 +5,7 @@ export interface CreateTicketRequest {
   description?: string;
   type: 'task' | 'bug' | 'story' | 'epic' | 'subtask' | 'improvement';
   priority: 'lowest' | 'low' | 'medium' | 'high' | 'highest';
-  project_id: number;
+  project_id: number | string; // Accept both numeric ID and UUID
   assignee_id?: number;
   sprint_id?: number;
   parent_id?: number;
@@ -263,6 +263,29 @@ export const ticketService = {
   },
 
   /**
+   * Create a new ticket for a specific project
+   */
+  async createProjectTicket(projectId: string, ticketData: CreateTicketRequest): Promise<CreateTicketResponse> {
+    try {
+      const response = await api.post(`/api/v1/projects/${projectId}/tickets`, ticketData);
+      return response.data;
+    } catch (error: any) {
+      console.error('Failed to create project ticket:', error);
+      
+      // Extract error message from response
+      if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      } else if (error.response?.data?.errors) {
+        const validationErrors = error.response.data.errors;
+        const errorMessages = Object.values(validationErrors).flat();
+        throw new Error(errorMessages.join(', '));
+      } else {
+        throw new Error('Failed to create project ticket. Please try again.');
+      }
+    }
+  },
+
+  /**
    * Get users for a specific project
    */
   async getProjectUsers(projectId: string): Promise<any> {
@@ -311,6 +334,25 @@ export const ticketService = {
     } catch (error: any) {
       console.error('Failed to fetch ticket:', error);
       throw new Error('Failed to fetch ticket. Please try again.');
+    }
+  },
+
+  /**
+   * Create a new ticket for a specific project with attachments
+   */
+  async createProjectTicketWithAttachments(projectId: string, formData: FormData): Promise<CreateTicketResponse> {
+    try {
+      const token = localStorage.getItem('auth_token');
+      const response = await api.post(`/api/v1/projects/${projectId}/tickets`, formData, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error: any) {
+      console.error('Error creating project ticket with attachments:', error);
+      throw error;
     }
   },
 

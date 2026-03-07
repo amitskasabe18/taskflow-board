@@ -80,8 +80,8 @@ const LoginPage = () => {
         if (loginSuccess) {
           toast.success("Login successful! Welcome back.");
           
-          // Navigate to board page
-          navigate('/board', { 
+          // Navigate to project board page
+          navigate('/9ec18e8a-8fe2-4b35-9149-0b8aeacab015/board', { 
             replace: true // Replace history so user can't go back to login
           });
         } else {

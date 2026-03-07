@@ -97,8 +97,8 @@ const Register = () => {
           const loginSuccess = await login(token);
           
           if (loginSuccess) {
-            // Navigate to board page directly after successful login
-            navigate('/board', { 
+            // Navigate to project board page directly after successful login
+            navigate('/9ec18e8a-8fe2-4b35-9149-0b8aeacab015/board', { 
               replace: true 
             });
           } else {
