@@ -11,10 +11,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Bug, AlertCircle, CheckCircle, Loader2 } from "lucide-react";
+import { Plus, Bug, AlertCircle, CheckCircle, Loader2, CalendarIcon } from "lucide-react";
 import { ticketService, CreateTicketRequest } from "@/services/ticketService";
 import axios from "axios";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
 
 interface CreateTicketDialogProps {
   open: boolean;
@@ -30,16 +34,23 @@ export function CreateTicketDialog({ open, onOpenChange, projectId, onTicketCrea
   const [priority, setPriority] = useState("medium");
   const [assigneeId, setAssigneeId] = useState("");
   const [storyPoints, setStoryPoints] = useState("");
+  const [dueDate, setDueDate] = useState("");
+  const [startDate, setStartDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [environment, setEnvironment] = useState("");
+  const [originalEstimateMinutes, setOriginalEstimateMinutes] = useState("");
   const [attachments, setAttachments] = useState<File[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [users, setUsers] = useState<any[]>([]);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
+  const [projectStatuses, setProjectStatuses] = useState<any[]>([]);
+  const [selectedStatus, setSelectedStatus] = useState("");
 
   // Fetch project users when dialog opens
   useEffect(() => {
     if (open && projectId) {
       fetchProjectUsers();
+      fetchProjectStatuses();
     }
   }, [open, projectId]);
 
@@ -48,22 +59,49 @@ export function CreateTicketDialog({ open, onOpenChange, projectId, onTicketCrea
     try {
       // Make direct axios call to the API
       const token = localStorage.getItem('auth_token');
-      const response = await axios.get('http://localhost:8000/api/v1/users/845646bb-a9ca-4469-9c3d-bdae3af6798b', {
+      const response = await axios.get(`http://${import.meta.env.VITE_BACKEND_URL || 'localhost:8000'}/api/v1/users/${projectId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
-      
+
       console.log('Users API response:', response.data);
       console.log('Users data:', response.data.data);
-      
+
       setUsers(response.data.data || []);
     } catch (err: any) {
       console.error('Failed to fetch users:', err);
       setUsers([]);
     } finally {
       setIsLoadingUsers(false);
+    }
+  };
+
+  const fetchProjectStatuses = async () => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      const response = await axios.get(`http://${import.meta.env.VITE_BACKEND_URL || 'localhost:8000'}/api/v1/projects/${projectId}/statuses`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      console.log('Statuses API response:', response.data);
+      console.log('Statuses data:', response.data.data);
+
+      const statuses = response.data.data || [];
+      setProjectStatuses(statuses);
+      
+      // Auto-select the first status (usually "To Do" or "Backlog")
+      if (statuses.length > 0 && !selectedStatus) {
+        const firstStatus = statuses.find((s: any) => s.category === 'todo') || statuses[0];
+        setSelectedStatus(firstStatus.id.toString());
+      }
+    } catch (err: any) {
+      console.error('Failed to fetch project statuses:', err);
+      setProjectStatuses([]);
     }
   };
 
@@ -88,7 +126,7 @@ export function CreateTicketDialog({ open, onOpenChange, projectId, onTicketCrea
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     const files = e.dataTransfer.files;
     if (files) {
       handleFileSelect(files);
@@ -130,8 +168,8 @@ export function CreateTicketDialog({ open, onOpenChange, projectId, onTicketCrea
     if (fileType === 'image') {
       return (
         <div className="flex items-center gap-3 p-2 bg-muted/50 rounded-md">
-          <img 
-            src={previewUrl} 
+          <img
+            src={previewUrl}
             alt={file.name}
             className="w-16 h-16 object-cover rounded-md border"
           />
@@ -145,7 +183,7 @@ export function CreateTicketDialog({ open, onOpenChange, projectId, onTicketCrea
       return (
         <div className="flex items-center gap-3 p-2 bg-muted/50 rounded-md">
           <div className="relative">
-            <video 
+            <video
               src={previewUrl}
               className="w-16 h-16 object-cover rounded-md border"
               muted
@@ -195,7 +233,7 @@ export function CreateTicketDialog({ open, onOpenChange, projectId, onTicketCrea
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    
+
     if (!title.trim()) {
       setError("Ticket title is required");
       return;
@@ -206,7 +244,7 @@ export function CreateTicketDialog({ open, onOpenChange, projectId, onTicketCrea
     try {
       // Create FormData for file upload
       const formData = new FormData();
-      
+
       // Add ticket data
       formData.append('title', title.trim());
       if (description.trim()) {
@@ -216,12 +254,33 @@ export function CreateTicketDialog({ open, onOpenChange, projectId, onTicketCrea
       formData.append('priority', priority);
       formData.append('project_id', getProjectId().toString());
       
+      // Add status_id to prevent backend default status error
+      if (selectedStatus) {
+        formData.append('status_id', selectedStatus);
+      }
+
       if (assigneeId && assigneeId !== "unassigned") {
         formData.append('assignee_id', assigneeId);
       }
-      
+
       if (storyPoints) {
         formData.append('story_points', storyPoints);
+      }
+
+      if (dueDate) {
+        formData.append('due_date', dueDate);
+      }
+
+      if (startDate) {
+        formData.append('start_date', startDate);
+      }
+
+      if (environment) {
+        formData.append('environment', environment);
+      }
+
+      if (originalEstimateMinutes) {
+        formData.append('original_estimate_minutes', originalEstimateMinutes);
       }
 
       // Add attachments
@@ -235,28 +294,33 @@ export function CreateTicketDialog({ open, onOpenChange, projectId, onTicketCrea
       console.log('Attachments count:', attachments.length);
 
       const response = await ticketService.createProjectTicketWithAttachments(projectId, formData);
-      
+
       // Reset form
       setTitle("");
       setDescription("");
       setType("task");
       setPriority("medium");
+      setSelectedStatus("");
       setAssigneeId("");
       setStoryPoints("");
+      setDueDate("");
+      setStartDate(format(new Date(), 'yyyy-MM-dd'));
+      setEnvironment("");
+      setOriginalEstimateMinutes("");
       setAttachments([]);
-      
+
       // Close dialog
       onOpenChange(false);
-      
+
       // Notify parent component
       if (onTicketCreated) {
         onTicketCreated(response.data.ticket);
       }
-      
+
       // Show success message
       console.log('Ticket created successfully:', response.data.ticket);
       // You could show a success toast here
-      
+
     } catch (err: any) {
       setError(err.message || "Failed to create ticket. Please try again.");
       console.error('Ticket creation error:', err);
@@ -272,6 +336,11 @@ export function CreateTicketDialog({ open, onOpenChange, projectId, onTicketCrea
       setDescription("");
       setType("task");
       setPriority("medium");
+      setSelectedStatus("");
+      setDueDate("");
+      setStartDate(format(new Date(), 'yyyy-MM-dd'));
+      setEnvironment("");
+      setOriginalEstimateMinutes("");
       onOpenChange(false);
     }
   };
@@ -295,7 +364,7 @@ export function CreateTicketDialog({ open, onOpenChange, projectId, onTicketCrea
                 {error}
               </div>
             )}
-            
+
             <div className="grid gap-2">
               <Label htmlFor="title">Title *</Label>
               <Input
@@ -308,7 +377,7 @@ export function CreateTicketDialog({ open, onOpenChange, projectId, onTicketCrea
                 className="border-2 focus:border-primary/50"
               />
             </div>
-            
+
             <div className="grid gap-2">
               <Label htmlFor="description">Description</Label>
               <RichTextEditor
@@ -318,7 +387,7 @@ export function CreateTicketDialog({ open, onOpenChange, projectId, onTicketCrea
                 className="border-2 focus:border-primary/50"
               />
             </div>
-            
+
             {/* Attachments Section */}
             <div className="grid gap-2">
               <Label htmlFor="attachments">Attachments</Label>
@@ -353,7 +422,7 @@ export function CreateTicketDialog({ open, onOpenChange, projectId, onTicketCrea
                   </Button>
                 </div>
               </div>
-              
+
               {/* Attachment List */}
               {attachments.length > 0 && (
                 <div className="mt-4 space-y-2">
@@ -377,7 +446,7 @@ export function CreateTicketDialog({ open, onOpenChange, projectId, onTicketCrea
                 </div>
               )}
             </div>
-            
+
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="type">Type</Label>
@@ -397,7 +466,7 @@ export function CreateTicketDialog({ open, onOpenChange, projectId, onTicketCrea
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div className="grid gap-2">
                 <Label htmlFor="priority">Priority</Label>
                 <Select value={priority} onValueChange={setPriority} disabled={isLoading}>
@@ -413,8 +482,24 @@ export function CreateTicketDialog({ open, onOpenChange, projectId, onTicketCrea
                   </SelectContent>
                 </Select>
               </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="status">Status</Label>
+                <Select value={selectedStatus} onValueChange={setSelectedStatus} disabled={isLoading || projectStatuses.length === 0}>
+                  <SelectTrigger className="border-2 focus:border-primary/50">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {projectStatuses.map((status) => (
+                      <SelectItem key={status.id} value={status.id.toString()}>
+                        {status.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            
+
             <div className="grid gap-2">
               <Label htmlFor="storyPoints">Story Points</Label>
               <Input
@@ -430,7 +515,95 @@ export function CreateTicketDialog({ open, onOpenChange, projectId, onTicketCrea
                 className="border-2 focus:border-primary/50"
               />
             </div>
-            
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="dueDate">Due Date</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !dueDate && "text-muted-foreground",
+                        isLoading && "opacity-50"
+                      )}
+                      disabled={isLoading}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {dueDate ? format(new Date(dueDate), "PPP") : <span>Pick a date</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={dueDate ? new Date(dueDate) : undefined}
+                      onSelect={(date) => setDueDate(date ? format(date, 'yyyy-MM-dd') : "")}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="startDate">Start Date</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !startDate && "text-muted-foreground",
+                        isLoading && "opacity-50"
+                      )}
+                      disabled={isLoading}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {startDate ? format(new Date(startDate), "PPP") : <span>Pick a date</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={startDate ? new Date(startDate) : undefined}
+                      onSelect={(date) => setStartDate(date ? format(date, 'yyyy-MM-dd') : "")}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="environment">Environment</Label>
+                <Select value={environment} onValueChange={setEnvironment} disabled={isLoading}>
+                  <SelectTrigger className="border-2 focus:border-primary/50">
+                    <SelectValue placeholder="Select environment" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="development">Development</SelectItem>
+                    <SelectItem value="staging">Staging</SelectItem>
+                    <SelectItem value="production">Production</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="originalEstimateMinutes">Original Estimate (minutes)</Label>
+                <Input
+                  id="originalEstimateMinutes"
+                  type="number"
+                  min="0"
+                  placeholder="e.g. 60"
+                  value={originalEstimateMinutes}
+                  onChange={(e) => setOriginalEstimateMinutes(e.target.value)}
+                  disabled={isLoading}
+                  className="border-2 focus:border-primary/50"
+                />
+              </div>
+            </div>
+
             <div className="grid gap-2">
               <Label htmlFor="assignee">Assignee</Label>
               <Select value={assigneeId} onValueChange={setAssigneeId} disabled={isLoading}>
@@ -451,13 +624,13 @@ export function CreateTicketDialog({ open, onOpenChange, projectId, onTicketCrea
                       <SelectItem key={user.id} value={user.id}>
                         <div className="flex items-center gap-2">
                           <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary-foreground text-xs font-medium">
-                            {user.first_name && user.last_name 
+                            {user.first_name && user.last_name
                               ? `${user.first_name[0]}${user.last_name[0]}`.toUpperCase()
                               : user.email ? user.email[0].toUpperCase() : 'U'
                             }
                           </div>
                           <span className="text-sm text-muted-foreground">
-                            {user.first_name && user.last_name 
+                            {user.first_name && user.last_name
                               ? `${user.first_name} ${user.last_name}`
                               : user.email || 'Unknown User'
                             }
@@ -474,18 +647,18 @@ export function CreateTicketDialog({ open, onOpenChange, projectId, onTicketCrea
               </Select>
             </div>
           </div>
-          
+
           <DialogFooter>
-            <Button 
-              type="button" 
-              variant="outline" 
+            <Button
+              type="button"
+              variant="outline"
               onClick={handleClose}
               disabled={isLoading}
             >
               Cancel
             </Button>
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               disabled={!title.trim() || isLoading}
             >
               {isLoading ? (

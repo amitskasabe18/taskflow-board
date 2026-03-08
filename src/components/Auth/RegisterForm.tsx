@@ -42,7 +42,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onRegisterSuccess, onLoginC
     setSuccess('');
 
     try {
-      const response = await fetch('http://localhost:8000/api/v1/auth/send-otp', {
+      const response = await fetch(`http://${import.meta.env.VITE_BACKEND_URL || 'localhost:8000'}/api/v1/auth/send-otp`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -78,7 +78,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onRegisterSuccess, onLoginC
     setSuccess('');
 
     try {
-      const response = await fetch('http://localhost:8000/api/v1/auth/verify-otp', {
+      const response = await fetch(`http://${import.meta.env.VITE_BACKEND_URL || 'localhost:8000'}/api/v1/auth/verify-otp`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -123,7 +123,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onRegisterSuccess, onLoginC
         requestBody.organisation_uuid = formData.organisation_uuid;
       }
 
-      const response = await fetch('http://localhost:8000/api/v1/auth/register', {
+      const response = await fetch(`http://${import.meta.env.VITE_BACKEND_URL || 'localhost:8000'}/api/v1/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

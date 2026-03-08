@@ -2,15 +2,10 @@ import { useNavigate } from "react-router-dom";
 import { Loader2, ArrowUpRight, CheckCircle2, Circle, Clock, AlertCircle, Flame, TrendingUp, Users, LayoutGrid, Plus, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { useState, useEffect } from "react";
+import axios from "axios";
 
 // ─── Mock data (replace with real API calls) ─────────────────────────────────
-
-const STATS = [
-  { label: "Open Issues",      value: 24,  delta: "+3 today",   icon: Circle,       accent: "#60a5fa" },
-  { label: "In Progress",      value: 11,  delta: "5 assigned to you", icon: Clock, accent: "#fbbf24" },
-  { label: "Completed",        value: 87,  delta: "this sprint", icon: CheckCircle2, accent: "#34d399" },
-  { label: "Overdue",          value: 4,   delta: "need attention", icon: AlertCircle, accent: "#f87171" },
-];
 
 const RECENT_ISSUES = [
   { id: "PLN-142", title: "Fix OAuth token refresh race condition", priority: "urgent", status: "in_progress", assignee: "AK" },
@@ -83,9 +78,62 @@ function LoadingScreen() {
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { user, isLoading } = useAuthContext();
+  const { user, isLoading, token } = useAuthContext(); // Get token from context
+  const [stats, setStats] = useState([
+    { label: "Created Tickets", value: 0, delta: "by you", icon: Circle, accent: "#60a5fa" },
+    { label: "Assigned Tickets", value: 0, delta: "to you", icon: Clock, accent: "#fbbf24" },
+    { label: "Resolved Tickets", value: 0, delta: "by you", icon: CheckCircle2, accent: "#34d399" },
+    { label: "Overdue", value: 0, delta: "need attention", icon: AlertCircle, accent: "#f87171" },
+  ]);
+  const [statsLoading, setStatsLoading] = useState(true);
 
-  if (isLoading) return <LoadingScreen />;
+  // Fetch user statistics
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const baseUrl = import.meta.env.VITE_BACKEND_URL || 'localhost:8000';
+        const fullBaseUrl = baseUrl.startsWith('http') ? baseUrl : `http://${baseUrl}`;
+        
+        const authToken = token || localStorage.getItem('auth_token');
+        
+        if (!authToken) {
+          setStatsLoading(false);
+          return;
+        }
+        
+        const fullUrl = `${fullBaseUrl}/api/v1/users/statistics/my`;
+        
+        const response = await axios.get(fullUrl, {
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.data.success) {
+          const data = response.data.data;
+          setStats([
+            { label: "Created Tickets", value: data.created_tickets || 0, delta: "by you", icon: Circle, accent: "#60a5fa" },
+            { label: "Assigned Tickets", value: data.assigned_tickets || 0, delta: "to you", icon: Clock, accent: "#fbbf24" },
+            { label: "Resolved Tickets", value: data.resolved_tickets || 0, delta: "by you", icon: CheckCircle2, accent: "#34d399" },
+            { label: "Overdue", value: 0, delta: "need attention", icon: AlertCircle, accent: "#f87171" },
+          ]);
+        }
+      } catch (error) {
+        // Silently handle error
+      } finally {
+        setStatsLoading(false);
+      }
+    };
+
+    if (user && token) {
+      fetchStats();
+    } else {
+      setStatsLoading(false);
+    }
+  }, [user, token]);
+
+  if (isLoading || statsLoading) return <LoadingScreen />;
 
   if (!user) {
     navigate("/auth/login", { replace: true });
@@ -121,7 +169,7 @@ const Dashboard = () => {
 
       {/* ── Stat cards ──────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {STATS.map(({ label, value, delta, icon: Icon, accent }) => (
+        {stats.map(({ label, value, delta, icon: Icon, accent }) => (
           <div
             key={label}
             className="group relative rounded-xl border border-border bg-card p-5 hover:border-border/80 transition-all duration-200 cursor-default overflow-hidden"

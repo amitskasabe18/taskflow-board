@@ -5,9 +5,9 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useProject } from '@/context/ProjectContext';
 import { InviteUserDialog } from '@/components/projects/InviteUserDialog';
-import { 
-  ArrowLeft, Calendar, Users, Tag, Edit, Trash2, Loader2, 
-  Crown, Shield, Clock, Target, Flag, UserPlus 
+import {
+  ArrowLeft, Calendar, Users, Tag, Edit, Trash2, Loader2,
+  Crown, Shield, Clock, Target, Flag, UserPlus, Settings
 } from 'lucide-react';
 import { projectService } from '@/services/projectService';
 import { Project } from '@/types/project';
@@ -25,13 +25,13 @@ export const ProjectDetail = () => {
   useEffect(() => {
     const fetchProjectDetails = async () => {
       if (!id) return;
-      
+
       try {
         setLoading(true);
         setError(null);
         const projectData = await projectService.getProject(id);
         setProject(projectData);
-        
+
         setMembersLoading(true);
         const membersData = await projectService.getProjectMembers(id);
         setProjectMembers(membersData.members);
@@ -127,13 +127,13 @@ export const ProjectDetail = () => {
       <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-primary/5 via-primary/10 to-transparent p-8 border border-primary/10">
         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-secondary/10 rounded-full blur-2xl" />
-        
+
         <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-6">
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Button 
-                variant="ghost" 
-                size="sm" 
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => navigate('/projects')}
                 className="hover:bg-transparent -ml-3"
               >
@@ -148,15 +148,15 @@ export const ProjectDetail = () => {
               {project.description}
             </p>
           </div>
-          
+
           <div className="flex gap-2 self-end sm:self-center">
             <Button variant="outline" size="lg" className="shadow-sm hover:shadow-md transition-all">
               <Edit className="h-4 w-4 mr-2" />
               Edit
             </Button>
-            <Button 
-              variant="destructive" 
-              size="lg" 
+            <Button
+              variant="destructive"
+              size="lg"
               onClick={handleDelete}
               className="shadow-sm hover:shadow-md transition-all"
             >
@@ -185,7 +185,7 @@ export const ProjectDetail = () => {
                   <span className="text-3xl font-bold text-primary">{project.progress}%</span>
                 </div>
                 <div className="relative h-3 bg-secondary rounded-full overflow-hidden">
-                  <div 
+                  <div
                     className="absolute inset-y-0 left-0 bg-gradient-to-r from-primary to-primary/80 rounded-full transition-all duration-500 ease-out"
                     style={{ width: `${project.progress}%` }}
                   >
@@ -194,8 +194,8 @@ export const ProjectDetail = () => {
                 </div>
                 <p className="text-sm text-muted-foreground flex items-center gap-1">
                   <Clock className="h-4 w-4" />
-                  {project.progress === 100 
-                    ? 'Project completed successfully!' 
+                  {project.progress === 100
+                    ? 'Project completed successfully!'
                     : `${100 - project.progress}% remaining to reach goal`
                   }
                 </p>
@@ -224,8 +224,8 @@ export const ProjectDetail = () => {
                   {membersLoading && (
                     <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                   )}
-                  <InviteUserDialog 
-                    projectUuid={project.id} 
+                  <InviteUserDialog
+                    projectUuid={project.id}
                     projectName={project.name}
                   >
                     <Button size="sm" className="gap-2">
@@ -260,15 +260,15 @@ export const ProjectDetail = () => {
                 {projectMembers.length > 0 ? (
                   <div className="grid gap-3">
                     {projectMembers.map((member, index) => (
-                      <div 
-                        key={member.uuid || index} 
+                      <div
+                        key={member.uuid || index}
                         className="group flex items-center gap-4 p-4 rounded-lg border bg-card transition-all duration-200"
                       >
                         <div className="relative">
                           <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center border-2 border-background">
                             {member.profile_photo_path ? (
-                              <img 
-                                src={member.profile_photo_path} 
+                              <img
+                                src={member.profile_photo_path}
                                 alt={member.name}
                                 className="w-full h-full rounded-full object-cover"
                               />
@@ -284,7 +284,7 @@ export const ProjectDetail = () => {
                             </div>
                           )}
                         </div>
-                        
+
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="font-semibold truncate">{member.name || 'Unknown'}</span>
@@ -323,7 +323,7 @@ export const ProjectDetail = () => {
                   <div className="text-center py-8 border-2 border-dashed rounded-lg">
                     <Users className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
                     <p className="text-muted-foreground">No members added yet</p>
-                    <Button variant="link" className="mt-2" onClick={() => {}}>
+                    <Button variant="link" className="mt-2" onClick={() => { }}>
                       Invite your first team member
                     </Button>
                   </div>
@@ -384,7 +384,7 @@ export const ProjectDetail = () => {
                   </p>
                 </div>
               </div>
-              
+
               {project.endDate && (
                 <div className="flex items-start gap-3">
                   <div className="p-2 rounded-full bg-primary/10">
@@ -403,7 +403,7 @@ export const ProjectDetail = () => {
                   </div>
                 </div>
               )}
-              
+
               <div className="flex items-start gap-3">
                 <div className="p-2 rounded-full bg-primary/10">
                   <Clock className="h-4 w-4 text-primary" />
@@ -434,8 +434,8 @@ export const ProjectDetail = () => {
               <CardContent className="pt-6">
                 <div className="flex flex-wrap gap-2">
                   {project.tags.map((tag) => (
-                    <Badge 
-                      key={tag} 
+                    <Badge
+                      key={tag}
                       variant="secondary"
                       className="px-3 py-1 text-sm bg-secondary/50 hover:bg-secondary/70 transition-colors"
                     >
@@ -449,6 +449,24 @@ export const ProjectDetail = () => {
           )}
         </div>
       </div>
+
+      {/* Settings Section - Full Width */}
+      <Card className="border mt-8">
+        <CardHeader className="border-b bg-muted/20">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Settings className="h-5 w-5 text-primary" />
+            Settings
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-6">
+          <div className="h-32 flex items-center justify-center text-muted-foreground/40">
+            <div className="text-center">
+              <Settings className="h-12 w-12 mx-auto mb-3 opacity-50" />
+              <p className="text-sm">Project settings coming soon</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }; 

@@ -41,13 +41,13 @@ export const tickets: Ticket[] = [
   // Sprint 4 - Active
   mkTicket(1, "Fix login redirect loop", "bug", "critical", "in_progress", "u1", "s4", 5, ["auth", "urgent"]),
   mkTicket(2, "Add password reset flow", "story", "high", "todo", "u2", "s4", 8, ["auth"]),
-  mkTicket(3, "Redesign settings page", "task", "medium", "in_review", "u3", "s4", 5, ["ui"]),
+  mkTicket(3, "Redesign settings page", "task", "medium", "review", "u3", "s4", 5, ["ui"]),
   mkTicket(4, "Fix date picker timezone bug", "bug", "high", "in_progress", "u4", "s4", 3, ["ui"]),
   mkTicket(5, "Implement notification system", "story", "high", "todo", "u1", "s4", 13, ["feature"]),
   mkTicket(6, "Update API rate limiting", "task", "medium", "done", "u2", "s4", 3, ["api"]),
   mkTicket(7, "Write E2E tests for onboarding", "task", "low", "todo", "u5", "s4", 5, ["testing"]),
   mkTicket(8, "Optimize bundle size", "task", "medium", "in_progress", "u4", "s4", 8, ["performance"]),
-  mkTicket(9, "Fix mobile nav overflow", "bug", "high", "in_review", "u3", "s4", 2, ["ui", "mobile"]),
+  mkTicket(9, "Fix mobile nav overflow", "bug", "high", "review", "u3", "s4", 2, ["ui", "mobile"]),
   mkTicket(10, "Add analytics tracking", "story", "medium", "done", "u1", "s4", 5, ["analytics"]),
 
   // Sprint 5 - Planning

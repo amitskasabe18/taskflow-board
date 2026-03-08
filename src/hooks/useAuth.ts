@@ -38,7 +38,7 @@ export const useAuth = (): AuthContextType => {
   // Fetch user profile
   const fetchUserProfile = async (token: string): Promise<User | null> => {
     try {
-      const response = await fetch('http://localhost:8000/api/v1/users/me', {
+      const response = await fetch(`http://${import.meta.env.VITE_BACKEND_URL || 'localhost:8000'}/api/v1/users/me`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -129,7 +129,7 @@ export const useAuth = (): AuthContextType => {
   const logout = async (): Promise<void> => {
     try {
       if (authState.token) {
-        await fetch('http://localhost:8000/api/v1/auth/logout', {
+        await fetch(`http://${import.meta.env.VITE_BACKEND_URL || 'localhost:8000'}/api/v1/auth/logout`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${authState.token}`,

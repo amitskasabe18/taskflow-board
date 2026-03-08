@@ -17,7 +17,7 @@ export default function Sprints() {
   const progress = totalPoints ? Math.round((donePoints / totalPoints) * 100) : 0;
 
   const statusDist = useMemo(() => {
-    const counts: Record<string, number> = { todo: 0, in_progress: 0, in_review: 0, done: 0 };
+    const counts: Record<string, number> = { backlog: 0, todo: 0, in_progress: 0, review: 0, blocked: 0, done: 0 };
     sprintTickets.forEach((t) => counts[t.status]++);
     return Object.entries(counts).map(([k, v]) => ({ name: statusConfig[k as keyof typeof statusConfig].label, value: v }));
   }, [sprintTickets]);

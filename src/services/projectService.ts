@@ -35,20 +35,36 @@ export const projectService = {
       
       if (response.data.success && response.data.data.projects) {
         // Transform backend data to frontend Project type
-        return response.data.data.projects.data.map((project: any) => ({
-          id: project.uuid || project.id,
+        return response.data.data.projects.data.map((project: any): Project => ({
+          // API fields
+          id: project.id,
+          uuid: project.uuid,
           name: project.name,
           description: project.description || '',
-          status: mapProjectStatus(project.status),
-          priority: mapProjectPriority(project.priority),
-          startDate: project.start_date ? new Date(project.start_date) : new Date(),
+          status: project.status,
+          priority: project.priority,
+          start_date: project.start_date,
+          end_date: project.end_date,
+          budget: project.budget,
+          currency: project.currency,
+          metadata: project.metadata,
+          organisation_id: project.organisation_id,
+          created_by: project.created_by,
+          created_at: project.created_at,
+          updated_at: project.updated_at,
+          user_role: project.user_role,
+          user_joined_at: project.user_joined_at,
+          users: project.users || [],
+          
+          // Frontend computed fields for backward compatibility
+          progress: calculateProgress(project),
+          team: project.users?.map((user: any) => `${user.first_name} ${user.last_name}`).filter((name: string) => name) || [],
+          tags: project.tags ? (typeof project.tags === 'string' ? JSON.parse(project.tags) : project.tags) : [],
+          startDate: project.start_date ? new Date(project.start_date) : undefined,
           endDate: project.end_date ? new Date(project.end_date) : undefined,
+          owner: project.created_by ? `${project.created_by.first_name} ${project.created_by.last_name}` : 'Unknown',
           createdAt: new Date(project.created_at),
           updatedAt: new Date(project.updated_at),
-          owner: project.created_by?.name || 'Unknown',
-          team: project.users?.map((user: any) => user.name).filter((name: string) => name) || [],
-          tags: project.tags ? (typeof project.tags === 'string' ? JSON.parse(project.tags) : project.tags) : [],
-          progress: calculateProgress(project),
         }));
       }
       return [];
@@ -64,20 +80,36 @@ export const projectService = {
       const response = await api.get<ApiResponse<any>>('/api/v1/projects');
       
       if (response.data.success && response.data.data.projects) {
-        return response.data.data.projects.map((project: any) => ({
-          id: project.uuid || project.id,
+        return response.data.data.projects.map((project: any): Project => ({
+          // API fields
+          id: project.id,
+          uuid: project.uuid,
           name: project.name,
           description: project.description || '',
-          status: mapProjectStatus(project.status),
-          priority: mapProjectPriority(project.priority),
-          startDate: project.start_date ? new Date(project.start_date) : new Date(),
+          status: project.status,
+          priority: project.priority,
+          start_date: project.start_date,
+          end_date: project.end_date,
+          budget: project.budget,
+          currency: project.currency,
+          metadata: project.metadata,
+          organisation_id: project.organisation_id,
+          created_by: project.created_by,
+          created_at: project.created_at,
+          updated_at: project.updated_at,
+          user_role: project.user_role,
+          user_joined_at: project.user_joined_at,
+          users: project.users || [],
+          
+          // Frontend computed fields for backward compatibility
+          progress: calculateProgress(project),
+          team: project.users?.map((user: any) => `${user.first_name} ${user.last_name}`).filter((name: string) => name) || [],
+          tags: project.tags ? (typeof project.tags === 'string' ? JSON.parse(project.tags) : project.tags) : [],
+          startDate: project.start_date ? new Date(project.start_date) : undefined,
           endDate: project.end_date ? new Date(project.end_date) : undefined,
+          owner: project.created_by ? `${project.created_by.first_name} ${project.created_by.last_name}` : 'Unknown',
           createdAt: new Date(project.created_at),
           updatedAt: new Date(project.updated_at),
-          owner: project.created_by?.name || 'Unknown',
-          team: project.users?.map((user: any) => user.name).filter((name: string) => name) || [],
-          tags: project.tags ? (typeof project.tags === 'string' ? JSON.parse(project.tags) : project.tags) : [],
-          progress: calculateProgress(project),
         }));
       }
       return [];
@@ -97,19 +129,35 @@ export const projectService = {
       if (response.data.success && response.data.data.project) {
         const project = response.data.data.project;
         return {
-          id: project.uuid || project.id,
+          // API fields
+          id: project.id,
+          uuid: project.uuid,
           name: project.name,
           description: project.description || '',
-          status: mapProjectStatus(project.status),
-          priority: mapProjectPriority(project.priority),
-          startDate: project.start_date ? new Date(project.start_date) : new Date(),
+          status: project.status,
+          priority: project.priority,
+          start_date: project.start_date,
+          end_date: project.end_date,
+          budget: project.budget,
+          currency: project.currency,
+          metadata: project.metadata,
+          organisation_id: project.organisation_id,
+          created_by: project.created_by,
+          created_at: project.created_at,
+          updated_at: project.updated_at,
+          user_role: project.user_role,
+          user_joined_at: project.user_joined_at,
+          users: project.users || [],
+          
+          // Frontend computed fields for backward compatibility
+          progress: calculateProgress(project),
+          team: project.users?.map((user: any) => `${user.first_name} ${user.last_name}`).filter((name: string) => name) || [],
+          tags: project.tags ? (typeof project.tags === 'string' ? JSON.parse(project.tags) : project.tags) : [],
+          startDate: project.start_date ? new Date(project.start_date) : undefined,
           endDate: project.end_date ? new Date(project.end_date) : undefined,
+          owner: project.created_by ? `${project.created_by.first_name} ${project.created_by.last_name}` : 'Unknown',
           createdAt: new Date(project.created_at),
           updatedAt: new Date(project.updated_at),
-          owner: project.created_by?.name || 'Unknown',
-          team: project.users?.map((user: any) => user.name).filter((name: string) => name) || [],
-          tags: project.tags ? (typeof project.tags === 'string' ? JSON.parse(project.tags) : project.tags) : [],
-          progress: calculateProgress(project),
         };
       }
       return null;
@@ -130,19 +178,35 @@ export const projectService = {
       if (response.data.success && response.data.data.project) {
         const project = response.data.data.project;
         return {
-          id: project.uuid || project.id,
+          // API fields
+          id: project.id,
+          uuid: project.uuid,
           name: project.name,
           description: project.description || '',
-          status: mapProjectStatus(project.status),
-          priority: mapProjectPriority(project.priority),
-          startDate: project.start_date ? new Date(project.start_date) : new Date(),
+          status: project.status,
+          priority: project.priority,
+          start_date: project.start_date,
+          end_date: project.end_date,
+          budget: project.budget,
+          currency: project.currency,
+          metadata: project.metadata,
+          organisation_id: project.organisation_id,
+          created_by: project.created_by,
+          created_at: project.created_at,
+          updated_at: project.updated_at,
+          user_role: project.user_role,
+          user_joined_at: project.user_joined_at,
+          users: project.users || [],
+          
+          // Frontend computed fields for backward compatibility
+          progress: 0,
+          team: project.users?.map((user: any) => `${user.first_name} ${user.last_name}`).filter((name: string) => name) || [],
+          tags: project.tags ? (typeof project.tags === 'string' ? JSON.parse(project.tags) : project.tags) : [],
+          startDate: project.start_date ? new Date(project.start_date) : undefined,
           endDate: project.end_date ? new Date(project.end_date) : undefined,
+          owner: project.created_by ? `${project.created_by.first_name} ${project.created_by.last_name}` : 'Unknown',
           createdAt: new Date(project.created_at),
           updatedAt: new Date(project.updated_at),
-          owner: project.created_by?.name || 'Unknown',
-          team: project.users?.map((user: any) => user.name).filter((name: string) => name) || [],
-          tags: project.tags ? (typeof project.tags === 'string' ? JSON.parse(project.tags) : project.tags) : [],
-          progress: 0,
         };
       }
       throw new Error('Failed to create project');
@@ -163,19 +227,35 @@ export const projectService = {
       if (response.data.success && response.data.data.project) {
         const project = response.data.data.project;
         return {
-          id: project.uuid || project.id,
+          // API fields
+          id: project.id,
+          uuid: project.uuid,
           name: project.name,
           description: project.description || '',
-          status: mapProjectStatus(project.status),
-          priority: mapProjectPriority(project.priority),
-          startDate: project.start_date ? new Date(project.start_date) : new Date(),
+          status: project.status,
+          priority: project.priority,
+          start_date: project.start_date,
+          end_date: project.end_date,
+          budget: project.budget,
+          currency: project.currency,
+          metadata: project.metadata,
+          organisation_id: project.organisation_id,
+          created_by: project.created_by,
+          created_at: project.created_at,
+          updated_at: project.updated_at,
+          user_role: project.user_role,
+          user_joined_at: project.user_joined_at,
+          users: project.users || [],
+          
+          // Frontend computed fields for backward compatibility
+          progress: calculateProgress(project),
+          team: project.users?.map((user: any) => `${user.first_name} ${user.last_name}`).filter((name: string) => name) || [],
+          tags: project.tags ? (typeof project.tags === 'string' ? JSON.parse(project.tags) : project.tags) : [],
+          startDate: project.start_date ? new Date(project.start_date) : undefined,
           endDate: project.end_date ? new Date(project.end_date) : undefined,
+          owner: project.created_by ? `${project.created_by.first_name} ${project.created_by.last_name}` : 'Unknown',
           createdAt: new Date(project.created_at),
           updatedAt: new Date(project.updated_at),
-          owner: project.created_by?.name || 'Unknown',
-          team: project.users?.map((user: any) => user.name).filter((name: string) => name) || [],
-          tags: project.tags ? (typeof project.tags === 'string' ? JSON.parse(project.tags) : project.tags) : [],
-          progress: calculateProgress(project),
         };
       }
       throw new Error('Failed to update project');
