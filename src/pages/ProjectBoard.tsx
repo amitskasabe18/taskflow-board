@@ -19,22 +19,6 @@ import {
   useDroppable,
 } from '@dnd-kit/core'
 import { Plus, RefreshCw, AlertCircle } from 'lucide-react'
-import axios from 'axios'
-
-// Status mapping - this should match your backend status IDs
-const statusToIdMap: Record<Status, number> = {
-  backlog: 1,    // ID: 1
-  todo: 2,       // ID: 2  
-  in_progress: 3, // ID: 3
-  review: 4,     // ID: 4
-  done: 5,       // ID: 5 (was 6, but DB shows 5)
-  blocked: 6,     // ID: 6 (was 5, but DB shows 6)
-}
-
-// Helper function to get status ID
-const getStatusId = (status: Status): number => {
-  return statusToIdMap[status] || 2; // Default to todo (2)
-}
 
 function DroppableColumn({
   status,
@@ -64,7 +48,6 @@ const ProjectBoard = () => {
   const [activeTicket, setActiveTicket] = useState<Ticket | null>(null)
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [projectTickets, setProjectTickets] = useState<Ticket[]>([])
-  
   const [projectName, setProjectName] = useState<string>('')
 
   // Fetch project details to get project name
@@ -73,7 +56,7 @@ const ProjectBoard = () => {
     
     try {
       const token = localStorage.getItem('auth_token')
-      const response = await fetch(`http://${import.meta.env.VITE_BACKEND_URL || 'localhost:8000'}/api/v1/projects/${projectUuid}`, {
+      const response = await fetch(`http://localhost:8000/api/v1/projects/${projectUuid}`, {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
@@ -95,7 +78,7 @@ const ProjectBoard = () => {
     
     try {
       const token = localStorage.getItem('auth_token')
-      const response = await fetch(`http://${import.meta.env.VITE_BACKEND_URL || 'localhost:8000'}/api/v1/projects/${projectUuid}/tickets`, {
+      const response = await fetch(`http://localhost:8000/api/v1/projects/${projectUuid}/tickets`, {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
@@ -115,30 +98,16 @@ const ProjectBoard = () => {
           type: apiTicket.type as any,
           priority: apiTicket.priority as any,
           status: apiTicket.status?.slug as any,
-          resolutionStatus: apiTicket.resolution_status || null,
           assigneeId: apiTicket.assignee_id?.toString() || null,
-          assignee: apiTicket.assignee || null, // Include assignee data from API
           reporterId: apiTicket.reporter_id?.toString() || '',
           sprintId: apiTicket.sprint_id?.toString() || null,
-          parentId: apiTicket.parent_id?.toString() || null,
           storyPoints: apiTicket.story_points,
-          originalEstimateMinutes: apiTicket.original_estimate_minutes ?? null,
-          remainingEstimateMinutes: apiTicket.remaining_estimate_minutes ?? null,
           labels: apiTicket.labels?.map((label: any) => label.name) || [],
           dueDate: apiTicket.due_date,
-          startDate: apiTicket.start_date ?? null,
-          resolvedAt: apiTicket.resolved_at ?? null,
-          closedAt: apiTicket.closed_at ?? null,
-          resolutionNote: apiTicket.resolution_note ?? null,
-          environment: apiTicket.environment ?? null,
-          position: apiTicket.position ?? null,
-          isArchived: apiTicket.is_archived ?? false,
           linkedIssues: [],
           comments: [],
-          attachments: apiTicket.attachments || [],
           createdAt: apiTicket.created_at,
           updatedAt: apiTicket.updated_at,
-          deletedAt: apiTicket.deleted_at ?? null,
           estimate: apiTicket.original_estimate_minutes ? `${apiTicket.original_estimate_minutes}m` : null,
         }));
         
@@ -181,7 +150,7 @@ const ProjectBoard = () => {
     if (ticket) setActiveTicket(ticket)
   }
 
-  const handleDragEnd = async (event: DragEndEvent) => {
+  const handleDragEnd = (event: DragEndEvent) => {
     setActiveTicket(null)
     const { active, over } = event
     if (!over) return
@@ -199,49 +168,7 @@ const ProjectBoard = () => {
     if (newStatus) {
       const current = activeSprintTickets.find((t) => t.id === ticketId)
       if (current && current.status !== newStatus) {
-        // Instant UI update first for smooth experience
-        setProjectTickets(prev => prev.map(ticket => 
-          ticket.id === ticketId 
-            ? { ...ticket, status: newStatus }
-            : ticket
-        ));
-
-        // Then sync with backend in background
-        try {
-          const token = localStorage.getItem('auth_token');
-          const response = await fetch(`http://${import.meta.env.VITE_BACKEND_URL || 'localhost:8000'}/api/v1/tickets/${ticketId}/update-ticket-status`, {
-            method: 'PATCH',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              status_id: getStatusId(newStatus)
-            })
-          });
-
-          const data = await response.json();
-          
-          if (data.success) {
-            console.log('Ticket status updated successfully:', data);
-          } else {
-            console.error('Failed to update ticket status:', data.message);
-            // Revert UI change if backend update failed
-            setProjectTickets(prev => prev.map(ticket => 
-              ticket.id === ticketId 
-                ? { ...ticket, status: current.status }
-                : ticket
-            ));
-          }
-        } catch (error) {
-          console.error('Error updating ticket status:', error);
-          // Revert UI change if API call failed
-          setProjectTickets(prev => prev.map(ticket => 
-            ticket.id === ticketId 
-              ? { ...ticket, status: current.status }
-              : ticket
-          ));
-        }
+        updateTicket(ticketId, { status: newStatus })
       }
     }
   }
@@ -259,29 +186,16 @@ const ProjectBoard = () => {
       type: newTicket.type as any,
       priority: newTicket.priority as any,
       status: newTicket.status?.slug as any,
-      resolutionStatus: newTicket.resolution_status || null,
       assigneeId: newTicket.assignee_id?.toString() || null,
-      assignee: newTicket.assignee || null, // Include assignee data from API
       reporterId: newTicket.reporter_id?.toString() || '',
       sprintId: newTicket.sprint_id?.toString() || null,
-      parentId: newTicket.parent_id?.toString() || null,
       storyPoints: newTicket.story_points,
-      originalEstimateMinutes: newTicket.original_estimate_minutes ?? null,
-      remainingEstimateMinutes: newTicket.remaining_estimate_minutes ?? null,
       labels: newTicket.labels?.map((label: any) => label.name) || [],
       dueDate: newTicket.due_date,
-      startDate: newTicket.start_date ?? null,
-      resolvedAt: newTicket.resolved_at ?? null,
-      closedAt: newTicket.closed_at ?? null,
-      resolutionNote: newTicket.resolution_note ?? null,
-      environment: newTicket.environment ?? null,
-      position: newTicket.position ?? null,
-      isArchived: newTicket.is_archived ?? false,
       linkedIssues: [],
       comments: [],
       createdAt: newTicket.created_at,
       updatedAt: newTicket.updated_at,
-      deletedAt: newTicket.deleted_at ?? null,
       estimate: newTicket.original_estimate_minutes ? `${newTicket.original_estimate_minutes}m` : null,
     }
 
@@ -304,7 +218,7 @@ const ProjectBoard = () => {
   // Show error state if project tickets fetch failed
   if (error && projectTickets.length === 0) {
     return (
-      <div className="p-6  h-full flex items-center justify-center">
+      <div className="p-6 h-full flex items-center justify-center">
         <div className="text-center max-w-md">
           <AlertCircle className="h-8 w-8 mx-auto mb-4 text-destructive" />
           <p className="text-destructive mb-4">Failed to load project tickets</p>
@@ -357,7 +271,7 @@ const ProjectBoard = () => {
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         >
-          <div className="grid grid-cols-3 gap-6 h-[calc(100vh-260px)]">
+          <div className="grid grid-cols-4 gap-6 h-[calc(100vh-260px)]">
             {columns.map(({ status, tickets: colTickets }) => {
               const sc = statusConfig[status]
               const cc = columnColors[status]
@@ -365,7 +279,7 @@ const ProjectBoard = () => {
               return (
                 <div
                   key={status}
-                  className="flex min-h-96 flex-col rounded-xl border bg-card shadow-sm hover:shadow-md transition-all overflow-hidden"
+                  className="flex flex-col rounded-xl border bg-card shadow-sm hover:shadow-md transition-all overflow-hidden"
                 >
                   {/* Column Header */}
                   <div className="p-4 border-b bg-muted/30 sticky top-0 z-10">
