@@ -60,8 +60,12 @@ const AVATAR_COLORS = [
 
 const Logo = memo(({ isCollapsed }: { isCollapsed: boolean }) => (
   <div className="flex items-center justify-center px-4 py-4 border-b border-border">
-    <Hexagon className="h-6 w-6 text-primary" strokeWidth={2.5} />
-    {!isCollapsed && <span className="text-lg font-bold text-foreground ml-2">Planeify</span>}
+    <img 
+      src="/images/logo/logo_light.png" 
+      alt="Logo" 
+      className="h-6 w-6 object-contain" 
+    />
+    {!isCollapsed && <span className="text-lg font-bold text-foreground ml-2">Orbit</span>}
   </div>
 ));
 Logo.displayName = "Logo";

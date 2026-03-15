@@ -4,15 +4,15 @@ import { priorityConfig, typeConfig } from "@/lib/ticketUtils";
 import { cn } from "@/lib/utils";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Calendar, Clock, Paperclip, MessageCircle, Tag, History } from "lucide-react";
-import { useState, useEffect } from "react";
+import { Calendar, Clock, Paperclip, MessageCircle, Tag, History, GripVertical } from "lucide-react";
+import React, { useState, useEffect } from "react";
 
 interface Props {
   ticket: Ticket;
   onClick: () => void;
 }
 
-export function TicketCard({ ticket, onClick }: Props) {
+export const TicketCard = React.memo(({ ticket, onClick }: Props) => {
   const assignee = ticket.assignee;
   const pc = priorityConfig[ticket.priority] || { className: "", emoji: "📋", label: "Unknown" };
   const tc = typeConfig[ticket.type] || { className: "", emoji: "📋", label: "Unknown" };
@@ -26,7 +26,7 @@ export function TicketCard({ ticket, onClick }: Props) {
     const fetchTicketHistory = async () => {
       try {
         const token = localStorage.getItem('auth_token');
-        const response = await fetch(`http://${import.meta.env.VITE_BACKEND_URL || 'localhost:8000'}/api/v1/tickets/${ticket.id}/history`, {
+        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'}/api/v1/tickets/${ticket.id}/history`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -55,11 +55,19 @@ export function TicketCard({ ticket, onClick }: Props) {
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: ticket.id, data: { ticket } });
+  } = useSortable({ 
+    id: ticket.id, 
+    data: { ticket },
+    transition: {
+      duration: 200,
+      easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
+    },
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
+    opacity: isDragging ? 0.5 : 1,
   };
 
   // Calculate completion percentage if estimates exist
@@ -78,18 +86,33 @@ export function TicketCard({ ticket, onClick }: Props) {
   const startDate = formatDate(ticket.startDate);
 
   return (
-    <button
+    <div
       ref={setNodeRef}
       style={style}
       {...attributes}
-      {...listeners}
-      onClick={onClick}
       className={cn(
-        "w-full text-left rounded-lg bg-surface-raised p-3 border border-border hover:border-primary/50 transition-all hover-lift",
+        "w-full rounded-lg bg-surface-raised border border-border hover:border-primary/50 transition-all",
         pc.className,
-        isDragging && "opacity-50 shadow-lg ring-2 ring-primary/40"
+        isDragging && "opacity-30 shadow-2xl scale-105"
       )}
     >
+      <div className="flex items-stretch">
+        {/* Drag Handle */}
+        <button
+          {...listeners}
+          className="flex items-center justify-center w-8 cursor-grab active:cursor-grabbing hover:bg-accent transition-colors border-r border-border/50 rounded-l-lg flex-shrink-0"
+          aria-label="Drag handle"
+          type="button"
+        >
+          <GripVertical className="h-4 w-4 text-muted-foreground" />
+        </button>
+        
+        {/* Card Content */}
+        <button
+          onClick={onClick}
+          className="flex-1 text-left p-3 hover:bg-accent/30 transition-colors rounded-r-lg"
+          type="button"
+        >
       {/* Header with ticket number and type */}
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex items-center gap-2">
@@ -203,16 +226,20 @@ export function TicketCard({ ticket, onClick }: Props) {
             )}
           </div>
         </div>
-
-        {/* Status indicator */}
-        <div className="flex items-center gap-1">
-          {ticket.resolutionStatus && (
-            <span className="text-xs px-1.5 py-0.5 rounded bg-warning/10 text-warning">
-              {ticket.resolutionStatus}
-            </span>
-          )}
-        </div>
       </div>
-    </button>
+
+      {/* Status indicator */}
+      <div className="flex items-center gap-1">
+        {ticket.resolutionStatus && (
+          <span className="text-xs px-1.5 py-0.5 rounded bg-warning/10 text-warning">
+            {ticket.resolutionStatus}
+          </span>
+        )}
+      </div>
+      </button>
+    </div>
+  </div>
   );
-}
+});
+
+TicketCard.displayName = 'TicketCard';

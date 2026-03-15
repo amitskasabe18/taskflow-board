@@ -38,7 +38,10 @@ export const useAuth = (): AuthContextType => {
   // Fetch user profile
   const fetchUserProfile = async (token: string): Promise<User | null> => {
     try {
-      const response = await fetch(`http://${import.meta.env.VITE_BACKEND_URL || 'localhost:8000'}/api/v1/users/me`, {
+      const baseUrl = import.meta.env.VITE_BACKEND_URL?.startsWith('http') 
+        ? import.meta.env.VITE_BACKEND_URL 
+        : `http://${import.meta.env.VITE_BACKEND_URL || 'localhost:8000'}`;
+      const response = await fetch(`${baseUrl}/api/v1/users/me`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',

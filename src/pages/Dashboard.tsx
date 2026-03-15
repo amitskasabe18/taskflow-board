@@ -151,7 +151,7 @@ const Dashboard = () => {
       <div className="flex items-start justify-between">
         <div>
             <p className="text-sm text-zinc-500 mb-1">{greeting}</p>
-            <h1 className="text-[28px] font-semibold tracking-tight text-white">
+            <h1 className="text-[28px] font-semibold tracking-tight dark:text-white">
               {firstName} <span className="text-zinc-600">👋</span>
             </h1>
             <p className="text-sm text-zinc-500 mt-1">

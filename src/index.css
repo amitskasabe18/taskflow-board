@@ -170,3 +170,31 @@
     @apply transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20;
   }
 }
+
+/* Drag and Drop Performance Optimizations */
+[data-dnd-kit-draggable],
+[data-dnd-kit-droppable] {
+  will-change: transform;
+}
+
+/* Smooth dragging with GPU acceleration */
+.cursor-grab {
+  cursor: grab;
+}
+
+.cursor-grabbing,
+.cursor-grab:active {
+  cursor: grabbing;
+}
+
+/* Optimize transitions during drag */
+[data-dnd-kit-draggable] {
+  transition: transform 200ms cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+/* Reduce paint during scroll in droppable areas */
+[data-dnd-kit-droppable] {
+  contain: layout style paint;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}

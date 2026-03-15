@@ -45,7 +45,7 @@ const App = () => (
             <Routes>
               {/* Public Routes - No authentication required */}
               <Route path="/" element={<Login />} />
-              <Route path="/auth/send-otp" element={<SendOtp />} />
+              <Route path="/auth/signup" element={<SendOtp />} />
               <Route path="/auth/verify-otp" element={<VerifyOtp />} />
               <Route path="/auth/create-organization" element={<CreateOrganization />} />
               <Route path="/auth/register" element={<Register />} />

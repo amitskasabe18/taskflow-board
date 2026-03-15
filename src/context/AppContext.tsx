@@ -11,7 +11,7 @@ interface AppState {
   setTickets: React.Dispatch<React.SetStateAction<Ticket[]>>;
   setSprints: React.Dispatch<React.SetStateAction<Sprint[]>>;
   setCurrentProject: (p: Project) => void;
-  updateTicket: (id: string, updates: Partial<Ticket>) => void;
+  updateTicket: (id: string, updates: Partial<Ticket>) => Promise<void>;
   addTicket: (ticket: Ticket) => void;
   refreshTickets: () => Promise<void>;
 }
@@ -45,8 +45,34 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     refreshTickets();
   }, [currentProject]);
 
-  const updateTicket = (id: string, updates: Partial<Ticket>) => {
-    setTickets((prev) => prev.map((t) => (t.id === id ? { ...t, ...updates, updatedAt: new Date().toISOString() } : t)));
+  const updateTicket = async (id: string, updates: Partial<Ticket>) => {
+    console.log('Updating ticket:', id, 'with updates:', updates);
+    try {
+      const token = localStorage.getItem('auth_token');
+      const url = `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'}/api/v1/tickets/${id}`;
+      console.log('API URL:', url);
+      
+      const response = await fetch(url, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(updates),
+      });
+
+      console.log('API response status:', response.status);
+      
+      if (response.ok) {
+        setTickets((prev) => prev.map((t) => (t.id === id ? { ...t, ...updates, updatedAt: new Date().toISOString() } : t)));
+        console.log('Ticket updated successfully in local state');
+      } else {
+        const errorText = await response.text();
+        console.error('Failed to update ticket:', response.statusText, 'Response:', errorText);
+      }
+    } catch (error) {
+      console.error('Error updating ticket:', error);
+    }
   };
 
   const addTicket = (ticket: Ticket) => {

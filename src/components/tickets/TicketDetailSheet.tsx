@@ -64,7 +64,7 @@ export function TicketDetailSheet({ ticket, open, onOpenChange }: Props) {
     setLoadingHistory(true);
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await axios.get(`http://${import.meta.env.VITE_BACKEND_URL || 'localhost:8000'}/api/v1/tickets/${ticket.id}/history`, {
+      const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'}/api/v1/tickets/${ticket.id}/history`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -191,7 +191,7 @@ export function TicketDetailSheet({ ticket, open, onOpenChange }: Props) {
 
   // Helper function to get file URL
   const getFileUrl = (path: string) => {
-    return `http://localhost:8000/storage/${path}`;
+    return `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'}/storage/${path}`;
   };
 
   // Fetch API users for assignee dropdown
@@ -199,7 +199,7 @@ export function TicketDetailSheet({ ticket, open, onOpenChange }: Props) {
     queryKey: ['project-users'],
     queryFn: async () => {
       const token = localStorage.getItem('auth_token');
-      const response = await axios.get(`http://localhost:8000/api/v1/users/${currentProjectId || 2}`, {
+      const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'}/api/v1/users/${currentProjectId || 2}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

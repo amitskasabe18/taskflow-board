@@ -51,7 +51,7 @@ export const ProjectDetail = () => {
   const handleDelete = async () => {
     if (window.confirm('Are you sure you want to delete this project?')) {
       try {
-        await deleteProject(project!.id);
+        await deleteProject(project!.uuid);
         navigate('/projects');
       } catch (err: any) {
         console.error('Error deleting project:', err);
@@ -225,14 +225,17 @@ export const ProjectDetail = () => {
                     <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                   )}
                   <InviteUserDialog
-                    projectUuid={project.id}
+                    projectUuid={project.uuid}
                     projectName={project.name}
-                  >
-                    <Button size="sm" className="gap-2">
-                      <UserPlus className="h-4 w-4" />
-                      Invite
-                    </Button>
-                  </InviteUserDialog>
+                    onInviteSent={() => {
+                      // Refresh members after invitation
+                      setMembersLoading(true);
+                      projectService.getProjectMembers(project.uuid).then((data) => {
+                        setProjectMembers(data.members);
+                        setMembersLoading(false);
+                      });
+                    }}
+                  />
                 </div>
               </div>
             </CardHeader>

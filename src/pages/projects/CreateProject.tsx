@@ -103,7 +103,7 @@ export const CreateProject = () => {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-6">
           {/* Basic Information */}
           <Card>
             <CardHeader>

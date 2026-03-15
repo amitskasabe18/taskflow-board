@@ -59,7 +59,7 @@ export function CreateTicketDialog({ open, onOpenChange, projectId, onTicketCrea
     try {
       // Make direct axios call to the API
       const token = localStorage.getItem('auth_token');
-      const response = await axios.get(`http://${import.meta.env.VITE_BACKEND_URL || 'localhost:8000'}/api/v1/users/${projectId}`, {
+      const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'}/api/v1/users/${projectId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -81,7 +81,7 @@ export function CreateTicketDialog({ open, onOpenChange, projectId, onTicketCrea
   const fetchProjectStatuses = async () => {
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await axios.get(`http://${import.meta.env.VITE_BACKEND_URL || 'localhost:8000'}/api/v1/projects/${projectId}/statuses`, {
+      const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'}/api/v1/projects/${projectId}/statuses`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

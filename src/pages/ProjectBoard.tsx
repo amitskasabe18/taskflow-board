@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback, useMemo } from 'react'
 import { useParams } from 'react-router-dom'
 import { useAppState } from '@/context/AppContext'
 import { TicketCard } from '@/components/board/TicketCard'
@@ -18,16 +18,21 @@ import {
   DragEndEvent,
   useDroppable,
 } from '@dnd-kit/core'
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { Plus, RefreshCw, AlertCircle } from 'lucide-react'
 
-function DroppableColumn({
+const DroppableColumn = React.memo(function DroppableColumn({
   status,
-  children,
+  tickets,
+  onTicketClick,
 }: {
   status: Status;
-  children: React.ReactNode;
+  tickets: Ticket[];
+  onTicketClick: (ticket: Ticket) => void;
 }) {
   const { isOver, setNodeRef } = useDroppable({ id: status });
+  const ticketIds = useMemo(() => tickets.map(t => t.id), [tickets]);
+  
   return (
     <div
       ref={setNodeRef}
@@ -36,10 +41,25 @@ function DroppableColumn({
         isOver && "bg-primary/5"
       )}
     >
-      {children}
+      <SortableContext items={ticketIds} strategy={verticalListSortingStrategy}>
+        <div className="flex flex-col gap-3 p-3 overflow-y-auto h-full">
+          {tickets.map((ticket) => (
+            <TicketCard
+              key={ticket.id}
+              ticket={ticket}
+              onClick={() => onTicketClick(ticket)}
+            />
+          ))}
+          {tickets.length === 0 && (
+            <div className="flex flex-col items-center justify-center text-xs text-muted-foreground py-10">
+              No tickets
+            </div>
+          )}
+        </div>
+      </SortableContext>
     </div>
   );
-}
+});
 
 const ProjectBoard = () => {
   const { projectUuid } = useParams<{ projectUuid: string }>()
@@ -53,7 +73,7 @@ const ProjectBoard = () => {
   // Fetch project details to get project name
   const fetchProjectDetails = async () => {
     if (!projectUuid) return;
-    
+
     try {
       const token = localStorage.getItem('auth_token')
       const response = await fetch(`http://localhost:8000/api/v1/projects/${projectUuid}`, {
@@ -62,7 +82,7 @@ const ProjectBoard = () => {
           'Authorization': `Bearer ${token}`,
         },
       });
-      
+
       const json = await response.json();
       if (json.success && json.data) {
         setProjectName(json.data.project.name || 'Unknown Project');
@@ -75,7 +95,7 @@ const ProjectBoard = () => {
   // Fetch tickets for specific project
   const fetchProjectTickets = async () => {
     if (!projectUuid) return;
-    
+
     try {
       const token = localStorage.getItem('auth_token')
       const response = await fetch(`http://localhost:8000/api/v1/projects/${projectUuid}/tickets`, {
@@ -84,7 +104,7 @@ const ProjectBoard = () => {
           'Authorization': `Bearer ${token}`,
         },
       });
-      
+
       const json = await response.json();
       console.log('Fetched project tickets:', json);
       if (json.success) {
@@ -110,7 +130,7 @@ const ProjectBoard = () => {
           updatedAt: apiTicket.updated_at,
           estimate: apiTicket.original_estimate_minutes ? `${apiTicket.original_estimate_minutes}m` : null,
         }));
-        
+
         console.log('Transformed tickets:', transformedTickets);
         setProjectTickets(transformedTickets);
       } else {
@@ -130,53 +150,86 @@ const ProjectBoard = () => {
   // Fetch project tickets on component mount
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+    useSensor(PointerSensor, { 
+      activationConstraint: { 
+        distance: 3,
+      } 
+    })
   )
 
   // Show all project tickets (no sprint filter for project board view)
   const activeSprintTickets = projectTickets
 
-  const columns = statusColumns.map((status) => ({
-    status,
-    tickets: activeSprintTickets.filter((t) => t.status === status),
-  }))
+  const columns = useMemo(() => 
+    statusColumns.map((status) => ({
+      status,
+      tickets: activeSprintTickets.filter((t) => t.status === status),
+    }))
+  , [activeSprintTickets])
+
+  const handleTicketClick = useCallback((ticket: Ticket) => {
+    setSelectedTicket(ticket);
+  }, []);
 
   console.log('Project tickets:', projectTickets);
   console.log('Active sprint tickets:', activeSprintTickets);
   console.log('Columns:', columns);
 
-  const handleDragStart = (event: DragStartEvent) => {
-    const ticket = activeSprintTickets.find((t) => t.id === event.active.id)
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    const ticket = projectTickets.find((t) => t.id === event.active.id)
     if (ticket) setActiveTicket(ticket)
-  }
+  }, [projectTickets])
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = useCallback(async (event: DragEndEvent) => {
+    console.log('Drag end event:', event);
     setActiveTicket(null)
     const { active, over } = event
-    if (!over) return
+    if (!over) {
+      console.log('No drop target');
+      return
+    }
 
     const ticketId = active.id as string
     let newStatus: Status | undefined
+    console.log('Ticket ID:', ticketId, 'Drop target ID:', over.id);
 
     if (statusColumns.includes(over.id as Status)) {
       newStatus = over.id as Status
+      console.log('Dropping on column:', newStatus);
     } else {
-      const overTicket = activeSprintTickets.find((t) => t.id === over.id)
+      const overTicket = projectTickets.find((t) => t.id === over.id)
       if (overTicket) newStatus = overTicket.status
+      console.log('Dropping on ticket:', overTicket);
     }
 
     if (newStatus) {
-      const current = activeSprintTickets.find((t) => t.id === ticketId)
+      const current = projectTickets.find((t) => t.id === ticketId)
+      console.log('Current ticket:', current, 'New status:', newStatus);
       if (current && current.status !== newStatus) {
-        updateTicket(ticketId, { status: newStatus })
+        console.log('Updating ticket...');
+        // Optimistic update
+        setProjectTickets(prev => prev.map((t) => 
+          t.id === ticketId ? { ...t, status: newStatus, updatedAt: new Date().toISOString() } : t
+        ))
+        
+        try {
+          await updateTicket(ticketId, { status: newStatus })
+          console.log('Ticket updated successfully');
+        } catch (error) {
+          console.error('Failed to update ticket:', error);
+          // Revert optimistic update on error
+          setProjectTickets(prev => prev.map((t) => 
+            t.id === ticketId ? { ...t, status: current.status } : t
+          ))
+        }
       }
     }
-  }
+  }, [projectTickets, updateTicket])
 
   const handleTicketCreated = (newTicket: any) => {
     console.log('Ticket created with data:', newTicket);
     console.log('Project UUID being used:', projectUuid);
-    
+
     const transformedTicket: Ticket = {
       id: newTicket.uuid,
       projectKey: newTicket.project?.key || 'PROJ',
@@ -271,15 +324,14 @@ const ProjectBoard = () => {
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         >
-          <div className="grid grid-cols-4 gap-6 h-[calc(100vh-260px)]">
+          <div className="grid grid-cols-3 gap-4 h-[calc(100vh-260px)]">
             {columns.map(({ status, tickets: colTickets }) => {
               const sc = statusConfig[status]
               const cc = columnColors[status]
-
               return (
                 <div
-                  key={status}
-                  className="flex flex-col rounded-xl border bg-card shadow-sm hover:shadow-md transition-all overflow-hidden"
+                key={status}
+                className="flex flex-col rounded-xl border bg-card shadow-sm hover:shadow-md transition-all overflow-hidden md:min-h-96"
                 >
                   {/* Column Header */}
                   <div className="p-4 border-b bg-muted/30 sticky top-0 z-10">
@@ -308,23 +360,11 @@ const ProjectBoard = () => {
                   </div>
 
                   {/* Column Content */}
-                  <DroppableColumn status={status}>
-                    <div className="flex flex-col gap-3 p-3 overflow-y-auto h-full">
-                      {colTickets.map((ticket) => (
-                        <TicketCard
-                          key={ticket.id}
-                          ticket={ticket}
-                          onClick={() => setSelectedTicket(ticket)}
-                        />
-                      ))}
-                      {/* Empty state */}
-                      {colTickets.length === 0 && (
-                        <div className="flex flex-col items-center justify-center text-xs text-muted-foreground py-10">
-                          No tickets
-                        </div>
-                      )}
-                    </div>
-                  </DroppableColumn>
+                  <DroppableColumn 
+                    status={status} 
+                    tickets={colTickets}
+                    onTicketClick={handleTicketClick}
+                  />
                 </div>
               )
             })}

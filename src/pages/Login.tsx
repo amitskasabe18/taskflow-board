@@ -275,7 +275,7 @@ const Login = () => {
 
           {/* Sign Up Button */}
           <button
-            onClick={() => navigate('/auth/send-otp')}
+            onClick={() => navigate('/auth/signup')}
             style={{
               width: "100%", height: 52, borderRadius: 14,
               background: "transparent",
