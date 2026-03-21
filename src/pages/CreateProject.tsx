@@ -5,6 +5,7 @@ interface Project {
   id: number;
   uuid: string;
   name: string;
+  shortcode?: string;
   description?: string;
   status: string;
   priority: string;
@@ -29,6 +30,7 @@ const CreateProject: React.FC = () => {
   const { isDark } = useTheme();
   const [formData, setFormData] = useState({
     name: '',
+    shortcode: '',
     description: '',
     status: 'active',
     priority: 'medium',
@@ -109,6 +111,7 @@ const CreateProject: React.FC = () => {
         },
         body: JSON.stringify({
           name: formData.name,
+          shortcode: formData.shortcode,
           description: formData.description,
           status: formData.status,
           priority: formData.priority,
@@ -126,6 +129,7 @@ const CreateProject: React.FC = () => {
         setSuccess('Project created successfully!');
         setFormData({
           name: '',
+          shortcode: '',
           description: '',
           status: 'active',
           priority: 'medium',
@@ -187,6 +191,22 @@ const CreateProject: React.FC = () => {
                     required
                     className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
                     placeholder="Enter project name"
+                  />
+                </div>
+
+                {/* Shortcode */}
+                <div>
+                  <label htmlFor="shortcode" className={`block text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                    Shortcode
+                  </label>
+                  <input
+                    type="text"
+                    id="shortcode"
+                    name="shortcode"
+                    value={formData.shortcode}
+                    onChange={handleChange}
+                    className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                    placeholder="Enter project shortcode (optional)"
                   />
                 </div>
 

@@ -33,7 +33,7 @@ export function CreateIssueDialog({ open, onOpenChange }: { open: boolean; onOpe
     if (!title.trim()) return;
     const num = Math.max(...tickets.map((t) => t.number), 0) + 1;
     const newTicket: Ticket = {
-      id: `t${num}`, projectKey: currentProject.key, number: num, title, description,
+      id: `t${num}`, key: `${currentProject.key}-${num}`, projectKey: currentProject.key, number: num, title, description,
       type, priority, status: "todo", assigneeId: assignee || null, reporterId: "u1",
       sprintId: sprintId || null, storyPoints: points ? parseInt(points) : null,
       labels: [], dueDate: null, linkedIssues: [], comments: [],

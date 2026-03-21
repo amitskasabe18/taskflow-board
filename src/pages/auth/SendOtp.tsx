@@ -23,10 +23,14 @@ const SendOtp = () => {
     try {
       const response = await api.post("/api/v1/users/auth/send-otp", { email: email.trim() })
       if (response.data.success || response.status === 200) {
+        // Store email in sessionStorage temporarily (more secure than URL)
+        sessionStorage.setItem('otp_email', email.trim())
+        sessionStorage.setItem('otp_timestamp', Date.now().toString())
+        
         toast.success("OTP sent to your email!")
         setSent(true)
         setTimeout(() => {
-          navigate(`/auth/verify-otp?email=${encodeURIComponent(email.trim())}`)
+          navigate("/auth/verify-otp")
         }, 800)
       } else {
         toast.error(response.data.message || "Failed to send OTP")

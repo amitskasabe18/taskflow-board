@@ -94,7 +94,7 @@ function MemberDetail({ member }: { member: TeamMember }) {
           const sc = statusConfig[t.status];
           return (
             <div key={t.id} className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-accent/30 transition-colors text-sm">
-              <span className="text-xs font-mono text-muted-foreground w-14">{t.projectKey}-{t.number}</span>
+              <span className="text-xs font-mono text-muted-foreground w-14">{t.key}</span>
               <span className="flex-1 truncate text-foreground">{t.title}</span>
               <Badge variant="outline" className={cn("text-[10px]", sc.color)}>{sc.label}</Badge>
             </div>

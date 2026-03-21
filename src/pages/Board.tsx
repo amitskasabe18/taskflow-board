@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import {
   Calendar,
   User,
@@ -13,6 +15,7 @@ import {
   CircleDashed,
   CircleDot,
   Flame,
+  Plus,
 } from "lucide-react";
 
 const BASE_URL = "http://localhost:8000";
@@ -35,7 +38,8 @@ interface Project {
 }
 
 const PRIORITY_CONFIG: Record<string, any> = {
-  urgent: { label: "Urgent", icon: Flame, color: "text-red-500", bg: "bg-red-50", darkBg: "dark:bg-red-950/20" },
+  critical: { label: "Critical", icon: Flame, color: "text-red-600", bg: "bg-red-50", darkBg: "dark:bg-red-950/20" },
+  urgent: { label: "Urgent", icon: AlertTriangle, color: "text-red-500", bg: "bg-red-50", darkBg: "dark:bg-red-950/20" },
   high: { label: "High", icon: AlertTriangle, color: "text-orange-500", bg: "bg-orange-50", darkBg: "dark:bg-orange-950/20" },
   medium: { label: "Medium", icon: CircleDot, color: "text-yellow-500", bg: "bg-yellow-50", darkBg: "dark:bg-yellow-950/20" },
   low: { label: "Low", icon: CircleDashed, color: "text-blue-500", bg: "bg-blue-50", darkBg: "dark:bg-blue-950/20" },
@@ -85,12 +89,13 @@ function CardSkeleton() {
 function ProjectCard({ project }: { project: Project }) {
   const priority = getPriority(project.priority);
   const status = getStatus(project.status);
+  const navigate = useNavigate();
 
   const PriorityIcon = priority.icon;
   const StatusIcon = status.icon;
 
   const handleCardClick = () => {
-    window.location.href = `/${project.uuid}/board`;
+    navigate(`/${project.uuid}/board`);
   };
 
   return (
@@ -205,6 +210,12 @@ function ProjectCard({ project }: { project: Project }) {
 }
 
 function EmptyState() {
+  const navigate = useNavigate();
+
+  const handleCreateProject = () => {
+    navigate("/projects/create");
+  };
+
   return (
     <div className="col-span-2 flex flex-col items-center py-24">
 
@@ -225,16 +236,25 @@ function EmptyState() {
       text-sm
       text-zinc-500
       dark:text-zinc-600
+      mb-6
       ">
         Projects assigned to you will appear here
       </p>
+
+      <Button
+        onClick={handleCreateProject}
+        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-lg px-4 py-2 h-10 transition-colors"
+      >
+        <Plus size={16} />
+        Create Project
+      </Button>
 
     </div>
   );
 }
 
 const Board = () => {
-
+  const navigate = useNavigate();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
