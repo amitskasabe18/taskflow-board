@@ -62,6 +62,7 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
         start_date: projectData.startDate.toISOString().split('T')[0],
         end_date: projectData.endDate?.toISOString().split('T')[0],
         tags: JSON.stringify(projectData.tags),
+        shortcode: projectData.shortcode,
       };
 
       const newProject = await projectService.createProject(backendData);
@@ -83,6 +84,7 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
       if (updates.startDate) backendUpdates.start_date = updates.startDate.toISOString().split('T')[0];
       if (updates.endDate) backendUpdates.end_date = updates.endDate.toISOString().split('T')[0];
       if (updates.tags) backendUpdates.tags = JSON.stringify(updates.tags);
+      if (updates.shortcode !== undefined) backendUpdates.shortcode = updates.shortcode;
 
       const updatedProject = await projectService.updateProject(id, backendUpdates);
       setProjects(prev => 

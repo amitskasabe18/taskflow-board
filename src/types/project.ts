@@ -14,6 +14,7 @@ export interface Project {
   id: number;
   uuid: string;
   name: string;
+  shortcode?: string;
   description?: string;
   status: string;
   priority: string;
@@ -36,21 +37,6 @@ export interface Project {
     created_at: string;
     updated_at: string;
   };
-  created_at: string;
-  updated_at: string;
-  user_role?: string;
-  user_joined_at?: string;
-  users?: User[];
-  // Frontend computed fields
-  progress?: number;
-  team?: string[];
-  tags?: string[];
-  startDate?: Date;
-  endDate?: Date;
-  owner?: string;
-  createdAt?: Date;
-  updatedAt?: Date;
-}
 
 export interface CreateProjectData {
   name: string;
@@ -60,4 +46,5 @@ export interface CreateProjectData {
   endDate?: Date;
   team: string[];
   tags: string[];
+  shortcode?: string;
 }

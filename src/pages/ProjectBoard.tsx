@@ -111,6 +111,7 @@ const ProjectBoard = () => {
         // Transform API tickets to frontend format
         const transformedTickets: Ticket[] = json.data.tickets.map((apiTicket: any) => ({
           id: apiTicket.uuid,
+          key: apiTicket.key,
           projectKey: apiTicket.project?.key || 'PROJ',
           number: apiTicket.key_sequence,
           title: apiTicket.title,

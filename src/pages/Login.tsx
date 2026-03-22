@@ -84,7 +84,7 @@ const Login = () => {
               <LayoutDashboard size={16} color="#fff" />
             </div>
             <span style={{ color: "#fff", fontWeight: 700, fontSize: 16, letterSpacing: "-0.3px" }}>
-              TaskFlow
+              Orbit
             </span>
           </div>
           <h2 style={{
@@ -95,7 +95,7 @@ const Login = () => {
             Everything your team<br />needs to ship faster
           </h2>
           <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 14, margin: 0 }}>
-            Join 12,000+ teams already using TaskFlow
+            Join 12,000+ teams already using Orbit
           </p>
         </div>
 
@@ -214,7 +214,7 @@ const Login = () => {
             }}>
               <LayoutDashboard size={17} color="#fff" />
             </div>
-            TaskFlow
+            Orbit
           </div>
         </div>
 
@@ -358,7 +358,7 @@ const Login = () => {
           color: isDark ? "#334155" : "#cbd5e1",
           fontSize: 12,
         }}>
-          © 2024 TaskFlow Board. All rights reserved.
+          © 2024 Orbit Board. All rights reserved.
         </div>
       </div>
 

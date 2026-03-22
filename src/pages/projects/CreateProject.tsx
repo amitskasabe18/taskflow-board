@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,13 +25,30 @@ export const CreateProject = () => {
     priority: 'medium',
     startDate: new Date(),
     team: [],
-    tags: []
+    tags: [],
+    shortcode: '',
   });
   
   const [newTag, setNewTag] = useState('');
   const [newTeamMember, setNewTeamMember] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Auto-generate shortcode from project name
+  useEffect(() => {
+    if (formData.name && !formData.shortcode) {
+      // Generate shortcode from first letter of project name
+      const generatedShortcode = formData.name
+        .replace(/[^a-zA-Z]/g, '') // Remove non-alphabetic characters
+        .toUpperCase()
+        .slice(0, 1); // Take only first character
+      
+      setFormData(prev => ({
+        ...prev,
+        shortcode: generatedShortcode
+      }));
+    }
+  }, [formData.name]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -122,6 +139,22 @@ export const CreateProject = () => {
                   onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                   required
                 />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="shortcode">Shortcode</Label>
+                <Input
+                  id="shortcode"
+                  placeholder="Auto-generated from project name"
+                  value={formData.shortcode}
+                  onChange={(e) => setFormData(prev => ({ ...prev, shortcode: e.target.value }))}
+                  className="bg-muted/50 border-muted-300 text-muted-foreground"
+                />
+                {formData.name && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Auto-generated: {formData.name.replace(/[^a-zA-Z]/g, '').toUpperCase().slice(0, 1)}
+                  </p>
+                )}
               </div>
               
               <div className="space-y-2">

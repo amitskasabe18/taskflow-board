@@ -116,7 +116,7 @@ export const TicketCard = React.memo(({ ticket, onClick }: Props) => {
       {/* Header with ticket number and type */}
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-mono text-muted-foreground">#{ticket.projectKey}-{ticket.number}</span>
+          <span className="text-xs font-mono text-muted-foreground">{ticket.key}</span>
           <span className="text-xs px-1.5 py-0.5 rounded bg-muted/50 text-muted-foreground">
             {tc.label}
           </span>

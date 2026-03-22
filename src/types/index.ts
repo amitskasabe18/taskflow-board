@@ -36,6 +36,7 @@ export interface Attachment {
 
 export interface Ticket {
   id: string;
+  key: string;
   projectKey: string;
   number: number;
   title: string;

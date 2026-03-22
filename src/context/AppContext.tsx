@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { Ticket, Sprint, Project } from "@/types";
+import { Ticket, Sprint } from "@/types";
+import { Project } from "@/types/project";
 import { ticketService, ProjectTicketsResponse } from "@/services/ticketService";
 
 interface AppState {
@@ -28,10 +29,26 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [sprints, setSprints] = useState<Sprint[]>([]);
   const [currentProject, setCurrentProject] = useState<Project>({
-    id: "6e972d92-0193-487f-91e8-f134bd4576fb",
-    name: "Codeseed CMS",
-    key: "CMS",
-    description: "Main project for codeseed CMS"
+    id: 1,
+    uuid: "6e972d92-0193-487f-91e8-f134bd4576fb",
+    name: "ORBIT",
+    shortcode: "ORBI",
+    description: "Main project for orbit",
+    status: "active",
+    priority: "medium",
+    organisation_id: 1,
+    created_by: {
+      id: 1,
+      uuid: "user-uuid",
+      first_name: "Admin",
+      last_name: "User",
+      email: "admin@example.com",
+      role: "admin",
+      is_active: 1,
+      organisation_id: 1,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    },
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

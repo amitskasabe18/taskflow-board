@@ -28,7 +28,7 @@ const mkTicket = (
   status: Ticket["status"], assigneeId: string | null, sprintId: string | null,
   points: number | null, labels: string[] = [], desc = ""
 ): Ticket => ({
-  id: `t${n}`, projectKey: "PHX", number: n, title, description: desc || `Details for ${title}`,
+  id: `t${n}`, key: `PHX-${n}`, projectKey: "PHX", number: n, title, description: desc || `Details for ${title}`,
   type, priority, status, assigneeId, reporterId: "u6", sprintId, storyPoints: points,
   labels, dueDate: null, linkedIssues: [], comments: [
     { id: `c${n}-1`, authorId: "u1", text: "I'll take a look at this.", createdAt: "2024-10-20T10:00:00Z" },

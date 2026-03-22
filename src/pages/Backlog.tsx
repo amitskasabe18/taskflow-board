@@ -165,7 +165,7 @@ function TicketRow({ ticket, onClick }: { ticket: Ticket; onClick: () => void })
     <button onClick={onClick} className="flex w-full items-center gap-3 px-4 py-2.5 text-sm hover:bg-accent/30 transition-colors border-b last:border-b-0">
       <GripVertical className="h-3.5 w-3.5 text-muted-foreground/40 cursor-grab" />
       <span className="text-xs">{tc.emoji}</span>
-      <span className="text-xs font-mono text-muted-foreground w-16">{ticket.projectKey}-{ticket.number}</span>
+      <span className="text-xs font-mono text-muted-foreground w-16">{ticket.key}</span>
       <span className="flex-1 text-foreground text-left truncate">{ticket.title}</span>
       <span className="text-xs">{pc.emoji}</span>
       {assignee && (

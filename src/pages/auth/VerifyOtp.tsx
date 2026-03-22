@@ -27,14 +27,31 @@ const VerifyOtp = () => {
   /* ------------------------------------------- */
 
   useEffect(() => {
-    const emailParam = searchParams.get("email");
-    if (emailParam) {
-      setEmail(decodeURIComponent(emailParam));
+    // Get email from sessionStorage (more secure than URL)
+    const storedEmail = sessionStorage.getItem('otp_email');
+    const storedTimestamp = sessionStorage.getItem('otp_timestamp');
+    
+    // Check if email exists and is not too old (15 minutes)
+    if (storedEmail && storedTimestamp) {
+      const timestamp = parseInt(storedTimestamp);
+      const now = Date.now();
+      const maxAge = 15 * 60 * 1000; // 15 minutes
+      
+      if (now - timestamp < maxAge) {
+        setEmail(storedEmail);
+      } else {
+        // Session expired, clear and redirect
+        sessionStorage.removeItem('otp_email');
+        sessionStorage.removeItem('otp_timestamp');
+        navigate("/auth/send-otp");
+        toast.error("Session expired. Please request a new OTP.");
+      }
     } else {
+      // No email in session, redirect to send OTP
       navigate("/auth/send-otp");
       toast.error("Email is required for OTP verification");
     }
-  }, [searchParams, navigate]);
+  }, [navigate]);
 
   useEffect(() => {
     setTimeout(() => inputRefs.current[0]?.focus(), 100);
@@ -97,6 +114,11 @@ const VerifyOtp = () => {
       if (response.data.success || response.status === 200) {
         toast.success("OTP verified!");
         setVerified(true);
+        
+        // Clear sessionStorage after successful verification
+        sessionStorage.removeItem('otp_email');
+        sessionStorage.removeItem('otp_timestamp');
+        
         setTimeout(() => {
           navigate("/auth/create-organization", {
             state: { email: email.trim(), verified: true },
@@ -117,6 +139,9 @@ const VerifyOtp = () => {
   };
 
   const handleResend = () => {
+    // Clear current session and redirect to send OTP
+    sessionStorage.removeItem('otp_email');
+    sessionStorage.removeItem('otp_timestamp');
     navigate("/auth/send-otp", { state: { email } });
   };
 

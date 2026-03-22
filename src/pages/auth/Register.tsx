@@ -83,7 +83,7 @@ const Register = () => {
           const token = loginResponse.data.data.token;
           const loginSuccess = await login(token);
           if (loginSuccess) {
-            navigate('/9ec18e8a-8fe2-4b35-9149-0b8aeacab015/board', { replace: true });
+            navigate('/dashboard', { replace: true });
           } else {
             navigate('/auth/login', { state: { email: email.trim() } });
           }
@@ -483,6 +483,7 @@ const Register = () => {
                   onFocus={() => setFocused('email')}
                   onBlur={() => setFocused(null)}
                   disabled={isLoading}
+                  readOnly
                   required
                 />
               </div>

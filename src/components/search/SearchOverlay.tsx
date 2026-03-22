@@ -14,7 +14,7 @@ export function SearchOverlay({ open, onOpenChange }: { open: boolean; onOpenCha
     if (!query.trim()) return { tickets: [], sprints: [], members: [] };
     const q = query.toLowerCase();
     return {
-      tickets: tickets.filter((t) => t.title.toLowerCase().includes(q) || `${t.projectKey}-${t.number}`.toLowerCase().includes(q)).slice(0, 8),
+      tickets: tickets.filter((t) => t.title.toLowerCase().includes(q) || t.key.toLowerCase().includes(q)).slice(0, 8),
       sprints: sprints.filter((s) => s.name.toLowerCase().includes(q)).slice(0, 3),
       members: team.filter((m) => m.name.toLowerCase().includes(q)).slice(0, 3),
     };
@@ -51,7 +51,7 @@ export function SearchOverlay({ open, onOpenChange }: { open: boolean; onOpenCha
                 const sc = statusConfig[t.status];
                 return (
                   <button key={t.id} onClick={() => onOpenChange(false)} className="flex w-full items-center gap-3 rounded-md px-2 py-2 text-sm hover:bg-accent transition-colors">
-                    <span className="text-xs font-mono text-muted-foreground">{t.projectKey}-{t.number}</span>
+                    <span className="text-xs font-mono text-muted-foreground">{t.key}</span>
                     <span className="flex-1 truncate text-foreground text-left">{t.title}</span>
                     <Badge variant="outline" className={`text-[10px] ${sc.color} border-current/20`}>{sc.label}</Badge>
                   </button>

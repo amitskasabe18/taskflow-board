@@ -176,7 +176,7 @@ const LoginPage = () => {
               organized.
             </h2>
             <p className="feature-desc">
-              A unified workspace for teams to plan, track, and deliver work — faster and with full clarity.
+              A unified workspace for teams to plan, track, and deliver work - faster and with full clarity.
             </p>
             <div className="feature-stats">
               <div className="stat-item">

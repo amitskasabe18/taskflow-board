@@ -9,7 +9,21 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 
 export default function Sprints() {
   const { tickets, sprints } = useAppState();
-  const activeSprint = sprints.find((s) => s.status === "active")!;
+  const activeSprint = sprints.find((s) => s.status === "active");
+  
+  // Handle case where there's no active sprint
+  if (!activeSprint) {
+    return (
+      <div className="p-6">
+        <div className="text-center py-12">
+          <h1 className="text-2xl font-bold text-foreground mb-4">No Active Sprint</h1>
+          <p className="text-muted-foreground">There is currently no active sprint. Create or start a sprint to view sprint analytics.</p>
+          <button className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-md">Create Sprint</button>
+        </div>
+      </div>
+    );
+  }
+  
   const sprintTickets = useMemo(() => tickets.filter((t) => t.sprintId === activeSprint.id), [tickets, activeSprint]);
 
   const totalPoints = sprintTickets.reduce((a, t) => a + (t.storyPoints || 0), 0);

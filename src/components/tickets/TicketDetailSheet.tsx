@@ -5,7 +5,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 import { useAppState } from "@/context/AppContext";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { Ticket, Priority, Status, Attachment } from "@/types";
 import { statusConfig, typeConfig, priorityConfig } from "@/lib/ticketUtils";
 import { format } from "date-fns";
@@ -13,8 +15,9 @@ import { cn } from "@/lib/utils";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
-import { Paperclip, Download, FileText, Image, Film, Archive, Eye, X, History, Calendar as CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
+import { Paperclip, Download, FileText, Image, Film, Archive, Eye, X, History, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Trash } from "lucide-react";
 import { useParams } from "react-router-dom";
+import { toast } from "sonner";
 // API User interface
 interface ApiUser {
   id: number;
@@ -48,6 +51,7 @@ interface Props {
 
 export function TicketDetailSheet({ ticket, open, onOpenChange }: Props) {
   const { updateTicket, sprints } = useAppState();
+  const { user: currentUser } = useAuthContext();
   const { projectUuid: currentProjectId } = useParams(); // Get project ID from URL
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState("");
@@ -223,6 +227,47 @@ export function TicketDetailSheet({ ticket, open, onOpenChange }: Props) {
   const startEditTitle = () => { setTitleDraft(ticket.title); setEditingTitle(true); };
   const saveTitle = () => { if (titleDraft.trim()) updateTicket(ticket.id, { title: titleDraft }); setEditingTitle(false); };
 
+  // Delete ticket function
+  const handleDeleteTicket = async () => {
+    if (!ticket) return;
+    
+    // Check if current user is the reporter (creator) of the ticket
+    if (!currentUser || currentUser.id.toString() !== ticket.reporterId) {
+      toast.error("You can only delete tickets you created");
+      return;
+    }
+
+    const confirmDelete = window.confirm(
+      `Are you sure you want to delete ticket ${ticket.key}? This action cannot be undone.`
+    );
+    
+    if (!confirmDelete) return;
+
+    try {
+      const token = localStorage.getItem('auth_token');
+      await axios.delete(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'}/api/v1/tickets/${ticket.id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      toast.success(`Ticket ${ticket.key} deleted successfully`);
+      onOpenChange(false); // Close the sheet
+      
+      // Optionally refresh the tickets list or redirect
+      window.location.reload(); // Simple refresh for now
+      
+    } catch (error: any) {
+      console.error('Failed to delete ticket:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to delete ticket. Please try again.';
+      toast.error(errorMessage);
+    }
+  };
+
+  // Check if current user can delete this ticket
+  const canDeleteTicket = currentUser && currentUser.id.toString() === ticket.reporterId;
+
   return (
     <>
       <Sheet open={open} onOpenChange={onOpenChange}>
@@ -231,25 +276,38 @@ export function TicketDetailSheet({ ticket, open, onOpenChange }: Props) {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <SheetTitle className="text-sm font-medium">
-                  {ticket.projectKey}-{ticket.number}
+                  {ticket.key}
                 </SheetTitle>
                 <Badge className={cn("text-xs", "className" in tc ? tc.className : "")}>
                   {tc.emoji} {tc.label}
                 </Badge>
               </div>
-              <Select value={ticket.status} onValueChange={(v) => updateTicket(ticket.id, { status: v as Status })}>
-                <SelectTrigger className={cn("w-auto gap-1.5 border-none bg-accent text-xs font-medium h-7", sc.color)}>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-popover border-border">
-                  <SelectItem value="backlog">Backlog</SelectItem>
-                  <SelectItem value="todo">Todo</SelectItem>
-                  <SelectItem value="in_progress">In Progress</SelectItem>
-                  <SelectItem value="review">Review</SelectItem>
-                  <SelectItem value="blocked">Blocked</SelectItem>
-                  <SelectItem value="done">Done</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="flex items-center gap-2">
+                {canDeleteTicket && (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleDeleteTicket}
+                    className="h-7 px-3 text-xs flex items-center gap-1.5"
+                  >
+                    <Trash className="h-3.5 w-3.5" />
+                    Delete
+                  </Button>
+                )}
+                <Select value={ticket.status} onValueChange={(v) => updateTicket(ticket.id, { status: v as Status })}>
+                  <SelectTrigger className={cn("w-auto gap-1.5 border-none bg-accent text-xs font-medium h-7", sc.color)}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover border-border">
+                    <SelectItem value="backlog">Backlog</SelectItem>
+                    <SelectItem value="todo">Todo</SelectItem>
+                    <SelectItem value="in_progress">In Progress</SelectItem>
+                    <SelectItem value="review">Review</SelectItem>
+                    <SelectItem value="blocked">Blocked</SelectItem>
+                    <SelectItem value="done">Done</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </SheetHeader>
 
