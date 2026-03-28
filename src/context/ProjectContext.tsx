@@ -67,6 +67,7 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
 
       const newProject = await projectService.createProject(backendData);
       setProjects(prev => [...prev, newProject]);
+      return newProject; // Return the created project
     } catch (err: any) {
       console.error('Error creating project:', err);
       throw err;

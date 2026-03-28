@@ -27,6 +27,7 @@ import Dashboard from "./pages/Dashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { ProjectList } from "./pages/projects/ProjectList";
 import { CreateProject } from "./pages/projects/CreateProject";
+import { EditProject } from "./pages/projects/EditProject";
 import { ProjectDetail } from "./pages/projects/ProjectDetail";
 import AcceptInvitation from "./pages/projects/AcceptInvitation";
 import Settings from "./pages/Settings";
@@ -163,6 +164,17 @@ const App = () => (
                     <ProjectProvider>
                       <AppLayout>
                         <CreateProject />
+                      </AppLayout>
+                    </ProjectProvider>
+                  </AppProvider>
+                </ProtectedRoute>
+              } />
+              <Route path="/projects/:uuid/edit" element={
+                <ProtectedRoute>
+                  <AppProvider>
+                    <ProjectProvider>
+                      <AppLayout>
+                        <EditProject />
                       </AppLayout>
                     </ProjectProvider>
                   </AppProvider>
